@@ -6,7 +6,7 @@ from typing import Callable
 _make_actions = lambda chars: set(ord(c) for c in chars)
 
 
-class BasicVideoPlayer:
+class VideoPlayer:
 
     _actions = {'quit': _make_actions('\x1bq')}
     
@@ -14,8 +14,7 @@ class BasicVideoPlayer:
         self.cap = cap
         self.rate = int(1000.0/self.cap.fps)
 
-    def play(self, window_name: str='VideoPlayer', framefunc: Callable[[np.ndarray], np.ndarray]=None,
-             loop: bool=False) -> None:
+    def play(self, window_name='VideoPlayer', framefunc=None, loop=False):
         """Plays through the video file with OpenCV's imshow()."""
 
         framefunc = framefunc or (lambda frame: frame)
@@ -31,7 +30,7 @@ class BasicVideoPlayer:
                     break
 
 
-class VideoPlayer:
+class VideoPlayerWithController:
     """Mimics YouTube's keyboard controls for playing a video via OpenCV's imshow.
 
     Actions
