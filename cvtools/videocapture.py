@@ -1,8 +1,7 @@
 import cv2
 
 
-"""Constants"""
-
+# Constants
 
 VIDEO_CAPTURE_PROPS_LIST = [
     'CAP_PROP_POS_MSEC',
@@ -49,11 +48,9 @@ VIDEO_CAPTURE_PROPS_LIST = [
 VIDEO_CAPTURE_PROPS = {prop.split('CAP_PROP_')[-1].lower(): prop for prop in VIDEO_CAPTURE_PROPS_LIST}
 
 
-"""Classes"""
-
+# Classes
 
 class VideoCaptureProperty:
-    """Descriptor for the video capture properties getter/setter."""
 
     _set_err = 'The property {p} is not supported by the backend used by the VideoCapture instance.'
 
@@ -73,6 +70,7 @@ class VideoCaptureProperty:
 
 
 class VideoCapture(cv2.VideoCapture):
+    """An adapter for `cv2.VideoCapture`, which """
 
     def __new__(cls, *args, **kwargs):
         for name, prop in VIDEO_CAPTURE_PROPS.items():
@@ -116,4 +114,3 @@ class VideoCapture(cv2.VideoCapture):
     def __exit__(self, exctype, exc, exctrace):
         """Releases the video capture object on exiting the context manager."""
         self.release()
-

@@ -4,20 +4,14 @@ from collections import defaultdict
 from bisect import bisect
 
 
-
-"""Constants"""
-
-
+# Constants
 
 RHOTHETA = 'rhotheta'
 ENDPOINT = 'endpoint'
 ERRORVAL = np.nan
 
 
-
-"""Utility Functions"""
-
-
+# Utility Functions
 
 def linetype(line):
     """Returns 'RHOTHETA' if line is defined by two variables,
@@ -234,16 +228,16 @@ def create_line(*args):
     Parameters
     ----------
     *args : numeric
-        Either two numbers specifying rho-theta or four numbers
-        specifying x1, y1, x2, y2. 
+        Either two numbers specifying `rho, theta` or four numbers
+        specifying `x1, y1, x2, y2`. 
 
     Returns
     -------
     line : np.ndarray
-        A line in rho-theta form np.array([[rho, theta]]) or endpoint
-        form np.array([[x1, y1, x2, y2]]). If it is in rho-theta form,
-        the angle returned will be in [0, π), with negative rho values
-        for angles input in [π, 2π).
+        A line in rho-theta form `np.array([[rho, theta]])` or endpoint
+        form `np.array([[x1, y1, x2, y2]])`. If it is in rho-theta form,
+        the angle returned will be in `[0, π)`, with negative `rho` values
+        for angles input in `[π, 2π)`.
 
     Example
     -------
@@ -615,10 +609,7 @@ def intersection(line1, line2, tolerance=1e-6, subpixel=False):
         return [[ERRORVAL, ERRORVAL]]
 
 
-
-"Drawing Functions"
-
-
+# Drawing Functions
 
 def draw_lines(img, lines, color=None, thickness=1):
     h, w = img.shape[:2]

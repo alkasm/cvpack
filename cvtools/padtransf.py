@@ -5,13 +5,6 @@ warpAffinePadded(), which compliment the built-in OpenCV functions
 warpPerspective() and warpAffine(). These functions calculate the
 extent of the warped image and pads both the destination and the
 warped image so both images can be fully displayed together.
-
-References
-----------
-See the following question and my answer on Stack Overflow for an
-idea of how this was conceptualized and to read the mathematics
-behind the functions: https://stackoverflow.com/a/44459869/5087436
-
 """
 
 
@@ -56,8 +49,8 @@ def warpPerspectivePadded(
 
     See Also
     --------
-    warpAffinePadded() : for `2x3` affine transformations
-    cv2.warpPerspective(), cv2.warpAffine() : original OpenCV functions
+    warpAffinePadded : for `2x3` affine transformations
+    cv2.warpPerspective : original OpenCV function
     """
 
     assert M.shape == (3, 3), \
@@ -155,8 +148,8 @@ def warpAffinePadded(
 
     See Also
     --------
-    warpPerspectivePadded() : for `3x3` perspective transformations
-    cv2.warpPerspective(), cv2.warpAffine() : original OpenCV functions
+    warpPerspectivePadded : for `3x3` perspective transformations
+    cv2.warpAffine : original OpenCV function
     """
     assert M.shape == (2, 3), \
         'Affine transformation shape should be (2, 3).\n' \
@@ -207,3 +200,12 @@ def warpAffinePadded(
         flags=flags, borderMode=borderMode, borderValue=borderValue)
 
     return dst_padded, src_warped
+
+"""
+References
+----------
+See the following question and my answer on Stack Overflow for an
+idea of how this was conceptualized and to read the mathematics
+behind the functions: https://stackoverflow.com/a/44459869/5087436
+
+"""
