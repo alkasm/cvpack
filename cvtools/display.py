@@ -5,7 +5,7 @@ def imshow(img, wait=0, window_name=''):
     cv2.imshow(window_name, img)
     return cv2.waitKey(wait) & 0xFF
 
-def color_components(labels):
+def imshow_components(labels, *args, **kwargs):
     # Map component labels to hue val
     label_hue = np.uint8(179*labels/np.max(labels))
     blank_ch = 255*np.ones_like(label_hue)
@@ -16,4 +16,8 @@ def color_components(labels):
 
     # set bg label to black
     labeled_img[label_hue==0] = 0
-    return labeled_img
+    return imshow(labeled_img, *args, **kwargs)
+
+def imshow_autoscale(img, *args, **kwargs):
+    scaled = cv2.normalize(img, None, np.min(img), np.max(img), cv2.NORM_MINMAX, cv2.CV_8U)
+    return imshow(scaled, *args, **kwargs)
