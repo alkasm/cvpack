@@ -1,7 +1,8 @@
 import cv2
 
-
 def imshow(img, wait=0, window_name=''):
+    if img is None:
+        raise ValueError('Image is empty; ensure you are reading from the correct path.')
     cv2.imshow(window_name, img)
     return cv2.waitKey(wait) & 0xFF
 

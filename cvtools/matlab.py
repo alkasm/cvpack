@@ -12,7 +12,7 @@ def bwdist(img, method=cv2.DIST_L2, dist_mask=cv2.DIST_MASK_5, label_type=cv2.DI
 
     Available distance masks:
         https://docs.opencv.org/3.4/d7/d1b/group__imgproc__misc.html#gaaa68392323ccf7fad87570e41259b497
-        
+
     Available label types:
         https://docs.opencv.org/3.4/d7/d1b/group__imgproc__misc.html#ga3fe343d63844c40318ee627bd1c1c42f
     """
@@ -34,6 +34,8 @@ def bwdist(img, method=cv2.DIST_L2, dist_mask=cv2.DIST_MASK_5, label_type=cv2.DI
 
 def imfill(bin_img):
     """Fills holes in the input binary image.
+
+    Achieves the same output as the imfill(BW, 'holes') variant.
 
     https://www.mathworks.com/help/images/ref/imfill.html
     """
