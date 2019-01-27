@@ -22,3 +22,28 @@ def imshow_components(labels, *args, **kwargs):
 def imshow_autoscale(img, *args, **kwargs):
     scaled = cv2.normalize(img, None, np.min(img), np.max(img), cv2.NORM_MINMAX, cv2.CV_8U)
     return imshow(scaled, *args, **kwargs)
+
+def imshow_enlarged(img, scale=10, grid=True, color=200, wait=0, window_name=''):
+    h, w = img.shape[:2]
+    r = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+    if grid:
+        r = add_grid(img, scale, color)
+    return imshow(r, wait, window_name)
+
+def add_grid(img, scale=10, color=200):
+
+    h, w = img.shape[:2]
+    r = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+
+    partial_grid = np.zeros((scale, scale), dtype=bool)
+    partial_grid[0, :] = True
+    partial_grid[:, 0] = True
+    gridlines = np.tile(partial_grid, (h, w))
+    r[gridlines] = color
+
+    pad_sizes = ((0, 1), (0, 1), (0, 0)) if len(img.shape) == 3 else ((0, 1), (0, 1))
+    r = np.pad(r, pad_sizes, 'constant', constant_values)
+    r[-1, :] = color
+    r[:, -1] = color
+
+    return r

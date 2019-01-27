@@ -1,4 +1,5 @@
 from .hough import *
 from .padtransf import *
 from .videocapture import VideoCapture
-from .videoplayer import VideoPlayer, VideoPlayerWithControls
+from .videoplayer import VideoPlayer
+from .iterators import *

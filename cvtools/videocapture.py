@@ -1,8 +1,6 @@
 import cv2
 
 
-# Constants
-
 VIDEO_CAPTURE_PROPS_LIST = [
     'CAP_PROP_POS_MSEC',
     'CAP_PROP_POS_FRAMES',
@@ -13,59 +11,50 @@ VIDEO_CAPTURE_PROPS_LIST = [
     'CAP_PROP_FOURCC',
     'CAP_PROP_FRAME_COUNT',
     'CAP_PROP_FORMAT',
-    'CAP_PROP_MODE',
-    'CAP_PROP_BRIGHTNESS',
-    'CAP_PROP_CONTRAST',
-    'CAP_PROP_SATURATION',
-    'CAP_PROP_HUE',
-    'CAP_PROP_GAIN',
-    'CAP_PROP_EXPOSURE',
-    'CAP_PROP_CONVERT_RGB',
-    'CAP_PROP_WHITE_BALANCE',
-    'CAP_PROP_RECTIFICATION',
 ]
 
-VIDEO_CAPTURE_PROPS = {prop.split('CAP_PROP_')[-1].lower(): prop for prop in VIDEO_CAPTURE_PROPS_LIST}
+VIDEO_CAPTURE_PROPS = {
+    prop.split('CAP_PROP_').pop().lower(): prop
+    for prop in VIDEO_CAPTURE_PROPS_LIST
+}
 
 
-# Classes
+def add_props(props):
+    def deco(cls):
+        for prop in props:
+            setattr(cls, prop, VideoCaptureProperty(prop))
+        return cls
+    return deco
+
 
 class VideoCaptureProperty:
 
-    _set_err = 'The property {p} is not supported by the backend used by the VideoCapture instance.'
+    _set_err = ('The property {p} is not supported by\n'
+                'the backend used by the cv2.VideoCapture() instance.')
+    _docstring = ('Alias for cap.get(cv2.{p}) and cap.set(cv2.{p}, value).\n'
+            'Raises AttributeError when setting if that property is not supported.\n')
 
     def __init__(self, name):
         self.name = name
         self.prop = getattr(cv2, VIDEO_CAPTURE_PROPS[name])
-        self.__doc__ = "alias for cap.get(prop)/cap.set(prop, val), where prop = cv2." + VIDEO_CAPTURE_PROPS[name]
+        self.__doc__ = self._docstring.format(p=VIDEO_CAPTURE_PROPS[name])
 
     def __get__(self, obj, objtype=None):
         return obj.get(self.prop)
 
     def __set__(self, obj, value):
-        was_set = obj.set(self.prop, value)
-        if not was_set:
-            prop_name = 'CAP_PROP_' + self.name.upper()
-            raise AttributeError(self._set_err.format(p=prop_name))
+        if not obj.set(self.prop, value):
+            raise AttributeError(self._set_err.format(p=VIDEO_CAPTURE_PROPS[self.name]))
 
 
+@add_props(VIDEO_CAPTURE_PROPS.keys())
 class VideoCapture(cv2.VideoCapture):
-    """An adapter for `cv2.VideoCapture`, which """
-
-    def __new__(cls, *args, **kwargs):
-        for name, prop in VIDEO_CAPTURE_PROPS.items():
-            setattr(cls, name, VideoCaptureProperty(name))
-        self = super().__new__(cls, *args, **kwargs)
-        return self
+    """An adapter for `cv2.VideoCapture`, giving a more Pythonic interface."""
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         if not self.isOpened():
-            print('Warning: unable to open video source:', *args, **kwargs)
-
-    def __del__(self):
-        """Releases the video capture object."""
-        self.release()
+            raise ValueError('Unable to open video source:', *args, **kwargs)
 
     def __iter__(self):
         """Resets the frame position to 0 at the start for repeatable iteration."""
@@ -76,16 +65,7 @@ class VideoCapture(cv2.VideoCapture):
         while self.isOpened():
             success, frame = self.read()
             if success: yield frame
-            else: break
-
-    def __reversed__(self):
-        """Iterates through the frames in reversed order, starting at the end."""
-        self.pos_frames = self.frame_count - 1
-        while self.pos_frames > 0:
-            success, frame = self.read()
-            if success: yield frame
-            else: break
-            self.pos_frames -= 2
+            else: return
 
     def __enter__(self):
         """Enter the context manager."""
@@ -94,3 +74,4 @@ class VideoCapture(cv2.VideoCapture):
     def __exit__(self, exctype, exc, exctrace):
         """Releases the video capture object on exiting the context manager."""
         self.release()
+
