@@ -67,13 +67,13 @@ class LineIterator:
         bt_pix ^= istep & s
 
         if connectivity == 8:
-            assert(dx >= 0 and dy >= 0)
+            assert dx >= 0 and dy >= 0
             self.err = dx - (dy + dy)
             self.plus_delta = dx + dx
             self.plus_step = int(istep)
             self.count = dx + 1
         else:
-            assert(dx >= 0 and dy >= 0)
+            assert dx >= 0 and dy >= 0
             self.err = 0
             self.plus_delta = (dx + dx) + (dy + dy)
             self.plus_step = int(istep - bt_pix)
@@ -92,7 +92,6 @@ class LineIterator:
 
 
 class ContourIterator:
-
     def __init__(self, img, contours):
         self.img = img
         self.contours = contours
@@ -101,11 +100,3 @@ class ContourIterator:
         for pt1, pt2 in pairwise(self.contours):
             for pt, _ in pairwise(LineIterator(self.img, pt1, pt2)):
                 yield pt
-
-
-import numpy as np
-contours = [(0, 0), (10, 0), (20, 20), (0, 0)]
-img = np.random.rand(100, 100)
-for v in ContourIterator(img, contours):
-    print(v)
-

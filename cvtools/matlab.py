@@ -1,7 +1,14 @@
 import numpy as np
 import cv2
 
-def bwdist(img, method=cv2.DIST_L2, dist_mask=cv2.DIST_MASK_5, label_type=cv2.DIST_LABEL_CCOMP, ravel=True):
+
+def bwdist(
+    img,
+    method=cv2.DIST_L2,
+    dist_mask=cv2.DIST_MASK_5,
+    label_type=cv2.DIST_LABEL_CCOMP,
+    ravel=True,
+):
     """Mimics Matlab's bwdist function, similar to OpenCV's distanceTransform()
     but with different output.
 
@@ -19,10 +26,10 @@ def bwdist(img, method=cv2.DIST_L2, dist_mask=cv2.DIST_MASK_5, label_type=cv2.DI
     flip = cv2.threshold(img, 0, 255, cv2.THRESH_BINARY_INV)[1]
     dist, labeled = cv2.distanceTransformWithLabels(flip, method, dist_mask)
 
-    if ravel:   # return linear indices if ravel == True (default)
+    if ravel:  # return linear indices if ravel == True (default)
         idx = np.zeros(img.shape, dtype=np.intp)
         idx_func = np.flatnonzero
-    else:       # return two-channel indices if ravel == False
+    else:  # return two-channel indices if ravel == False
         idx = np.zeros((*img.shape, 2), dtype=np.intp)
         idx_func = lambda masked: np.dstack(np.where(masked))
 
@@ -41,4 +48,3 @@ def imfill(bin_img):
     """
     contours = cv2.findContours(bin_img, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)[1]
     return cv2.drawContours(bin_img, contours, -1, 255, -1)
-

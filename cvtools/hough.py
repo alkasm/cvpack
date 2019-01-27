@@ -6,12 +6,13 @@ from bisect import bisect
 
 # Constants
 
-RHOTHETA = 'rhotheta'
-ENDPOINT = 'endpoint'
+RHOTHETA = "rhotheta"
+ENDPOINT = "endpoint"
 ERRORVAL = np.nan
 
 
 # Utility Functions
+
 
 def linetype(line):
     """Returns 'RHOTHETA' if line is defined by two variables,
@@ -41,7 +42,7 @@ def linetype(line):
     >>> linetype(line_endpoint)
     'endpoint'
     """
-    
+
     if len(line[0]) == 2:
         return RHOTHETA
     elif len(line[0]) == 4:
@@ -50,7 +51,7 @@ def linetype(line):
         raise TypeError
 
 
-def lineangle(line): 
+def lineangle(line):
     """Returns the angle (in radians) of the line in [0, 2π).
 
     Lines in rho-theta form are only defined with theta in [0, π)
@@ -91,14 +92,14 @@ def lineangle(line):
         # actual angle of line is perpendicular to theta
         rho, theta = line[0]
         if rho >= 0:
-            angle = (theta + np.pi/2)
+            angle = theta + np.pi / 2
         else:
-            angle = (theta - np.pi/2)
-        return angle % (2*np.pi)
+            angle = theta - np.pi / 2
+        return angle % (2 * np.pi)
     elif _linetype == ENDPOINT:
         x1, y1, x2, y2 = line[0]
-        angle = np.arctan2(y2-y1, x2-x1)
-        return angle % (2*np.pi)
+        angle = np.arctan2(y2 - y1, x2 - x1)
+        return angle % (2 * np.pi)
     else:
         raise TypeError
 
@@ -132,7 +133,7 @@ def isparallel(line1, line2, tol=None):
     >>> isparallel(line1, line2)
     True
     """
-    tol = np.pi/(180*60*60) if tol == None else tol
+    tol = np.pi / (180 * 60 * 60) if tol == None else tol
 
     angle1 = lineangle(line1) % np.pi
     angle2 = lineangle(line2) % np.pi
@@ -161,7 +162,7 @@ def length(line):
     141.42135623730951
     """
     x1, y1, x2, y2 = line[0]
-    return np.sqrt((x2-x1)**2 + (y2-y1)**2)
+    return np.sqrt((x2 - x1) ** 2 + (y2 - y1) ** 2)
 
 
 def create_line_rhotheta(rho, theta):
@@ -192,7 +193,7 @@ def create_line_rhotheta(rho, theta):
     >>> create_line(3, 5*np.pi/4)
     array([[-3.        ,  0.78539816]])
     """
-    theta = theta % (2*np.pi)
+    theta = theta % (2 * np.pi)
     if theta < np.pi:
         return np.array([[rho, theta]])
     return np.array([[-rho, theta % np.pi]])
@@ -258,9 +259,7 @@ def create_line(*args):
         raise TypeError
 
 
-
 """Distance Functions"""
-
 
 
 def point_line_dist(point, line):
@@ -273,25 +272,22 @@ def point_line_dist(point, line):
         line = convert(line)
     for x1, y1, x2, y2 in line:
         for x0, y0 in point:
-            numerator = abs((y2-y1)*x0 - (x2-x1)*y0 + x2*y1 - y2*x1)
+            numerator = abs((y2 - y1) * x0 - (x2 - x1) * y0 + x2 * y1 - y2 * x1)
             denominator = length(line)
             if denominator < 1:
-                print('Error: line length less than a single pixel.')
+                print("Error: line length less than a single pixel.")
                 return ERRORVAL
-    return numerator/denominator
-
+    return numerator / denominator
 
 
 def point_point_dist(point1, point2):
     return length(np.array([[*point1, *point2]]))
 
 
-
 """Conversion Functions"""
 
 
-
-def endpoint(line, bbox=[0, 0, 1e5, 1e5]): 
+def endpoint(line, bbox=[0, 0, 1e5, 1e5]):
     """Converts a line from rho-theta to endpoint form.
 
     Endpoints are given by the intersection to the input bounding box.
@@ -316,8 +312,7 @@ def endpoint(line, bbox=[0, 0, 1e5, 1e5]):
         with bounding box borders.
     """
     x1, y1, x2, y2 = bbox
-    border_lines = [[[x1, np.pi/2]], [[x2, np.pi/2]],
-                    [[y1, 0]], [[y2, 0]]]
+    border_lines = [[[x1, np.pi / 2]], [[x2, np.pi / 2]], [[y1, 0]], [[y2, 0]]]
 
     interx = [intersection(line, border_lines[i]) for i in range(4)]
 
@@ -326,16 +321,16 @@ def endpoint(line, bbox=[0, 0, 1e5, 1e5]):
         for x, y in point:
             if (x1 <= x <= x2) and (y1 <= y <= y2):
                 bounded_interx.extend([x, y])
-        if len(bounded_interx) == 4: 
+        if len(bounded_interx) == 4:
             # in case a line hits the corner exactly
             break
-    if len(bounded_interx) != 4: 
+    if len(bounded_interx) != 4:
         # line is outside the bounding box
-        return [[[ERRORVAL, ERRORVAL]]]*4
+        return [[[ERRORVAL, ERRORVAL]]] * 4
     return np.array([bounded_interx])
 
 
-def rhotheta(line): 
+def rhotheta(line):
     """Converts a line from endpoint to rho-theta form.
 
     Infinitely extending rho-theta lines are returned.
@@ -357,7 +352,7 @@ def rhotheta(line):
     return np.array([[rho, theta]])
 
 
-def convert(line, bbox=[0, 0, 1e5, 1e5]): 
+def convert(line, bbox=[0, 0, 1e5, 1e5]):
     """Converts a line between rho-theta and endpoint form.
 
     When rho-theta lines are input, endpoints are given by the
@@ -428,21 +423,21 @@ def pointslope(line, x=0, tol=None):
         vline = create_line(x, 0)
         if isparallel(line, vline):
             return np.array([[rho, ERRORVAL, ERRORVAL]])
-        m = np.sign(rho) * np.tan(theta + np.pi/2)
+        m = np.sign(rho) * np.tan(theta + np.pi / 2)
     elif _linetype == ENDPOINT:
         x1, y1, x2, y2 = line[0]
         if isparallel(line, vline):
             return np.array([[x1, ERRORVAL, ERRORVAL]])
-        m = (y2 - y1)/(x2 - x1)
+        m = (y2 - y1) / (x2 - x1)
         vline = create_line(x, 0, x, 1)
-    
+
     interx = intersection(line, vline)
     x, y = interx[0]
 
     return np.array([[x, y, m]])
 
 
-def slopeintercept(line, tol=None): 
+def slopeintercept(line, tol=None):
     """Convert from rho-theta or endpoint line to slope-intercept form.
 
     Parameters
@@ -467,9 +462,7 @@ def slopeintercept(line, tol=None):
         return np.array([[ERRORVAL, ERRORVAL]])
 
 
-
 """Segmenting Functions"""
-
 
 
 def segment_angle_kmeans(lines, k=2, **kwargs):
@@ -481,15 +474,16 @@ def segment_angle_kmeans(lines, k=2, **kwargs):
 
     # Define criteria = (type, max_iter, epsilon)
     default_criteria_type = cv2.TERM_CRITERIA_EPS + cv2.TERM_CRITERIA_MAX_ITER
-    criteria = kwargs.get('criteria', (default_criteria_type, 10, 1.0))
-    flags = kwargs.get('flags', cv2.KMEANS_RANDOM_CENTERS)
-    attempts = kwargs.get('attempts', 10)
+    criteria = kwargs.get("criteria", (default_criteria_type, 10, 1.0))
+    flags = kwargs.get("flags", cv2.KMEANS_RANDOM_CENTERS)
+    attempts = kwargs.get("attempts", 10)
 
     # returns angles in [0, π)
-    angles = [lineangle(line)%np.pi for line in lines]
+    angles = [lineangle(line) % np.pi for line in lines]
     # stretch angles to the full range and map to coords
-    pts = np.array([[[np.cos(2*angle), np.sin(2*angle)]]
-                    for angle in angles], dtype=np.float32)
+    pts = np.array(
+        [[[np.cos(2 * angle), np.sin(2 * angle)]] for angle in angles], dtype=np.float32
+    )
     # run kmeans on unit coordinates of the angle
     labels, centers = cv2.kmeans(pts, k, None, criteria, attempts, flags)[1:]
     labels = labels.reshape(-1)  # transpose to row vec
@@ -502,7 +496,7 @@ def segment_angle_kmeans(lines, k=2, **kwargs):
     return segmented
 
 
-def segment_angle_range(lines, step=np.pi/2): 
+def segment_angle_range(lines, step=np.pi / 2):
     """Groups lines based on angle.
 
     Chops up the interval [0, π) into ceil(π/step) bins and assigns
@@ -510,29 +504,27 @@ def segment_angle_range(lines, step=np.pi/2):
     with the last bin so lines that are nearly horizontal are counted
     in the same bin.
     """
-    angle_cuts = np.arange(step/2, np.pi, step=step)
+    angle_cuts = np.arange(step / 2, np.pi, step=step)
     segmented = defaultdict(list)
     for line in lines:
-        angle_bin = bisect(angle_cuts, lineangle(line)%np.pi) % len(angle_cuts)
+        angle_bin = bisect(angle_cuts, lineangle(line) % np.pi) % len(angle_cuts)
         segmented[angle_bin].append(line)
     segmented = list(segmented.values())
     return segmented
 
 
-def segment_angle_linspace(lines, num=2): 
+def segment_angle_linspace(lines, num=2):
     """Groups lines based on angle.
 
     Chops up the interval [0, π) into num bins and assigns each line
     to a bin. The first bin is only half-width and merged with the last
     bin so lines that are nearly horizontal are counted in the same bin.
     """
-    step = np.pi/num
+    step = np.pi / num
     return segment_angle_range(lines, step)
 
 
-
 """Intersection Functions"""
-
 
 
 def rhotheta_intersection(line1, line2, tolerance=1e-6, subpixel=False):
@@ -547,12 +539,11 @@ def rhotheta_intersection(line1, line2, tolerance=1e-6, subpixel=False):
     rho2, theta2 = line2[0]
 
     parallelism = abs(theta1 - theta2)
-    if parallelism < tolerance:  
+    if parallelism < tolerance:
         return [[ERRORVAL, ERRORVAL]]
 
     # Ax = b    linear system
-    A = np.array([[np.cos(theta1), np.sin(theta1)],
-                  [np.cos(theta2), np.sin(theta2)]])
+    A = np.array([[np.cos(theta1), np.sin(theta1)], [np.cos(theta2), np.sin(theta2)]])
     b = np.array([[rho1], [rho2]])
     x0, y0 = np.linalg.solve(A, b)
 
@@ -569,10 +560,10 @@ def endpoint_intersection(line1, line2, tolerance=1e-6, subpixel=False):
     parallel or very close to parallel.
 
     See https://stackoverflow.com/a/383527/5087436
-    """ 
+    """
 
     parallelism = abs(_line_angle(line1) - _line_angle(line2))
-    if parallelism < tolerance:  
+    if parallelism < tolerance:
         return [[ERRORVAL, ERRORVAL]]
 
     # extract points
@@ -580,9 +571,13 @@ def endpoint_intersection(line1, line2, tolerance=1e-6, subpixel=False):
     x3, y3, x4, y4 = line2[0]
 
     # compute determinant
-    denominator = (x1-x2)*(y3-y4) - (y1-y2)*(x3-x4)
-    x0 = ((x1*y2 - y1*x2)*(x3-x4) - (x1-x2)*(x3*y4 - y3*x4)) / denominator
-    y0 = ((x1*y2 - y1*x2)*(y3-y4) - (y1-y2)*(x3*y4 - y3*x4)) / denominator
+    denominator = (x1 - x2) * (y3 - y4) - (y1 - y2) * (x3 - x4)
+    x0 = (
+        (x1 * y2 - y1 * x2) * (x3 - x4) - (x1 - x2) * (x3 * y4 - y3 * x4)
+    ) / denominator
+    y0 = (
+        (x1 * y2 - y1 * x2) * (y3 - y4) - (y1 - y2) * (x3 * y4 - y3 * x4)
+    ) / denominator
 
     if subpixel:
         return [[x0, y0]]
@@ -599,17 +594,18 @@ def intersection(line1, line2, tolerance=1e-6, subpixel=False):
     """
     linetype1 = linetype(line1)
     linetype2 = linetype(line2)
-    
+
     if linetype1 == linetype2 == RHOTHETA:
         return rhotheta_intersection(line1, line2, tolerance, subpixel)
     elif linetype1 == linetype2 == ENDPOINT:
         return endpoint_intersection(line1, line2, tolerance, subpixel)
     else:
-        print('Line type error; nan intersection returned')
+        print("Line type error; nan intersection returned")
         return [[ERRORVAL, ERRORVAL]]
 
 
 # Drawing Functions
+
 
 def draw_lines(img, lines, color=None, thickness=1):
     h, w = img.shape[:2]
@@ -620,32 +616,32 @@ def draw_lines(img, lines, color=None, thickness=1):
     for line in lines:
         for x1, y1, x2, y2 in line:
             if ERRORVAL in [x1, y1, x2, y2]:
-                print('Line {} has np.nan vals; not drawing.'.format(line))
+                print("Line {} has np.nan vals; not drawing.".format(line))
                 continue
             cv2.line(img, (x1, y1), (x2, y2), color, thickness)
     return img
 
 
-def mark_endpoints(img, lines, color=None,
-                   markerType=cv2.MARKER_CROSS, markerSize=5):
+def mark_endpoints(img, lines, color=None, markerType=cv2.MARKER_CROSS, markerSize=5):
     color = color or (0, 255, 255) if len(img.shape) == 3 else 255
     for line in lines:
         for x1, y1, x2, y2 in line:
             if ERRORVAL in [x1, y1, x2, y2]:
-                print('Line {} has np.nan vals; not drawing.'.format(line))
+                print("Line {} has np.nan vals; not drawing.".format(line))
                 continue
             cv2.drawMarker(img, (x1, y1), color, markerType, markerSize)
             cv2.drawMarker(img, (x2, y2), color, markerType, markerSize)
     return img
 
 
-def mark_intersections(img, intersections, color=None,
-                       markerType=cv2.MARKER_TRIANGLE_UP, markerSize=5):
+def mark_intersections(
+    img, intersections, color=None, markerType=cv2.MARKER_TRIANGLE_UP, markerSize=5
+):
     color = color or (0, 255, 255) if len(img.shape) == 3 else 255
     for point in intersections:
         for x, y in point:
             if ERRORVAL in [x, y]:
-                print('Point {} has np.nan vals; not drawing.'.format(point))
+                print("Point {} has np.nan vals; not drawing.".format(point))
                 continue
             cv2.drawMarker(img, (x, y), color, markerType, markerSize)
     return img

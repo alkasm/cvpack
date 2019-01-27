@@ -1,5 +1,5 @@
-from .hough import *
+from . import hough
 from .padtransf import *
 from .videocapture import VideoCapture
 from .videoplayer import VideoPlayer
-from .iterators import *
+from .iterators import LineIterator, ContourIterator

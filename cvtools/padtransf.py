@@ -13,10 +13,8 @@ import numpy as np
 
 
 def warpPerspectivePadded(
-        src, dst, M,
-        flags=cv2.INTER_LINEAR,
-        borderMode=cv2.BORDER_CONSTANT,
-        borderValue=0):
+    src, dst, M, flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0
+):
     """Performs a perspective warp with padding.
 
     Parameters
@@ -53,24 +51,24 @@ def warpPerspectivePadded(
     cv2.warpPerspective : original OpenCV function
     """
 
-    assert M.shape == (3, 3), \
-        'Perspective transformation shape should be (3, 3).\n' \
-        + 'Use warpAffinePadded() for (2, 3) affine transformations.'
+    assert M.shape == (3, 3), (
+        "Perspective transformation shape should be (3, 3).\n"
+        + "Use warpAffinePadded() for (2, 3) affine transformations."
+    )
 
     M = M / M[2, 2]  # ensure a legal homography
-    if flags in (cv2.WARP_INVERSE_MAP,
-                 cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP,
-                 cv2.INTER_NEAREST + cv2.WARP_INVERSE_MAP):
+    if flags in (
+        cv2.WARP_INVERSE_MAP,
+        cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP,
+        cv2.INTER_NEAREST + cv2.WARP_INVERSE_MAP,
+    ):
         M = cv2.invert(M)[1]
         flags -= cv2.WARP_INVERSE_MAP
 
     # it is enough to find where the corners of the image go to find
     # the padding bounds; points in clockwise order from origin
     src_h, src_w = src.shape[:2]
-    lin_homg_pts = np.array([
-        [0, src_w, src_w, 0],
-        [0, 0, src_h, src_h],
-        [1, 1, 1, 1]])
+    lin_homg_pts = np.array([[0, src_w, src_w, 0], [0, 0, src_h, src_h], [1, 1, 1, 1]])
 
     # transform points
     transf_lin_homg_pts = M.dot(lin_homg_pts)
@@ -97,25 +95,33 @@ def warpPerspectivePadded(
     # create padded destination image
     dst_h, dst_w = dst.shape[:2]
 
-    pad_widths = [anchor_y, max(max_y, dst_h) - dst_h,
-                  anchor_x, max(max_x, dst_w) - dst_w]
+    pad_widths = [
+        anchor_y,
+        max(max_y, dst_h) - dst_h,
+        anchor_x,
+        max(max_x, dst_w) - dst_w,
+    ]
 
-    dst_padded = cv2.copyMakeBorder(dst, *pad_widths,
-                                    borderType=borderMode, value=borderValue)
-    
+    dst_padded = cv2.copyMakeBorder(
+        dst, *pad_widths, borderType=borderMode, value=borderValue
+    )
+
     dst_pad_h, dst_pad_w = dst_padded.shape[:2]
     src_warped = cv2.warpPerspective(
-        src, shifted_transf, (dst_pad_w, dst_pad_h),
-        flags=flags, borderMode=borderMode, borderValue=borderValue)
+        src,
+        shifted_transf,
+        (dst_pad_w, dst_pad_h),
+        flags=flags,
+        borderMode=borderMode,
+        borderValue=borderValue,
+    )
 
     return dst_padded, src_warped
 
 
 def warpAffinePadded(
-        src, dst, M,
-        flags=cv2.INTER_LINEAR,
-        borderMode=cv2.BORDER_CONSTANT,
-        borderValue=0):
+    src, dst, M, flags=cv2.INTER_LINEAR, borderMode=cv2.BORDER_CONSTANT, borderValue=0
+):
     """Performs an affine or Euclidean/rigid warp with padding.
 
     Parameters
@@ -151,22 +157,23 @@ def warpAffinePadded(
     warpPerspectivePadded : for `3x3` perspective transformations
     cv2.warpAffine : original OpenCV function
     """
-    assert M.shape == (2, 3), \
-        'Affine transformation shape should be (2, 3).\n' \
-        + 'Use warpPerspectivePadded() for (3, 3) homography transformations.'
+    assert M.shape == (2, 3), (
+        "Affine transformation shape should be (2, 3).\n"
+        + "Use warpPerspectivePadded() for (3, 3) homography transformations."
+    )
 
-    if flags in (cv2.WARP_INVERSE_MAP,
-                 cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP,
-                 cv2.INTER_NEAREST + cv2.WARP_INVERSE_MAP):
+    if flags in (
+        cv2.WARP_INVERSE_MAP,
+        cv2.INTER_LINEAR + cv2.WARP_INVERSE_MAP,
+        cv2.INTER_NEAREST + cv2.WARP_INVERSE_MAP,
+    ):
         M = cv2.invertAffineTransform(M)
         flags -= cv2.WARP_INVERSE_MAP
 
     # it is enough to find where the corners of the image go to find
     # the padding bounds; points in clockwise order from origin
     src_h, src_w = src.shape[:2]
-    lin_pts = np.array([
-        [0, src_w, src_w, 0],
-        [0, 0, src_h, src_h]])
+    lin_pts = np.array([[0, src_w, src_w, 0], [0, 0, src_h, src_h]])
 
     # transform points
     transf_lin_pts = M[:, :2].dot(lin_pts) + M[:, 2].reshape(2, 1)
@@ -188,18 +195,29 @@ def warpAffinePadded(
     # create padded destination image
     dst_h, dst_w = dst.shape[:2]
 
-    pad_widths = [anchor_y, max(max_y, dst_h) - dst_h,
-                  anchor_x, max(max_x, dst_w) - dst_w]
+    pad_widths = [
+        anchor_y,
+        max(max_y, dst_h) - dst_h,
+        anchor_x,
+        max(max_x, dst_w) - dst_w,
+    ]
 
-    dst_padded = cv2.copyMakeBorder(dst, *pad_widths,
-                                    borderType=borderMode, value=borderValue)
+    dst_padded = cv2.copyMakeBorder(
+        dst, *pad_widths, borderType=borderMode, value=borderValue
+    )
 
     dst_pad_h, dst_pad_w = dst_padded.shape[:2]
     src_warped = cv2.warpAffine(
-        src, shifted_transf, (dst_pad_w, dst_pad_h),
-        flags=flags, borderMode=borderMode, borderValue=borderValue)
+        src,
+        shifted_transf,
+        (dst_pad_w, dst_pad_h),
+        flags=flags,
+        borderMode=borderMode,
+        borderValue=borderValue,
+    )
 
     return dst_padded, src_warped
+
 
 """
 References
