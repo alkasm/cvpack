@@ -88,14 +88,3 @@ class LineIterator:
             mask = -1 if self.err < 0 else 0
             self.err += self.minus_delta + (self.plus_delta & mask)
             self.index += self.minus_step + (self.plus_step & mask)
-
-
-class ContourIterator:
-    def __init__(self, img, contours):
-        self.img = img
-        self.contours = contours
-
-    def __iter__(self):
-        for pt1, pt2 in pairwise(self.contours):
-            for pt, _ in pairwise(LineIterator(self.img, pt1, pt2)):
-                yield pt

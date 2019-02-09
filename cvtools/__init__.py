@@ -1,6 +1,8 @@
+from .clustering import kmeans_periodic
+from .display import *
 from . import hough
-from .padtransf import *
-from .videocapture import VideoCapture
-from .videoplayer import VideoPlayer
-from .iterators import LineIterator, ContourIterator
-from .imgproc import circular_mask, circular_gradient, resize_and_pad
+from .imgproc import circular_mask, circular_gradient, resize_pad
+from .iterators import LineIterator
+from . import matlab
+from .transformations import warpAffinePadded, warpPerspectivePadded
+from .videoio import VideoCapture, VideoPlayer

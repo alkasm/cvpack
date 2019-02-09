@@ -6,6 +6,7 @@ from bisect import bisect
 
 # Constants
 
+
 RHOTHETA = "rhotheta"
 ENDPOINT = "endpoint"
 ERRORVAL = np.nan
@@ -259,7 +260,7 @@ def create_line(*args):
         raise TypeError
 
 
-"""Distance Functions"""
+# Distance Functions
 
 
 def point_line_dist(point, line):
@@ -284,7 +285,7 @@ def point_point_dist(point1, point2):
     return length(np.array([[*point1, *point2]]))
 
 
-"""Conversion Functions"""
+# Conversion Functions
 
 
 def endpoint(line, bbox=[0, 0, 1e5, 1e5]):
@@ -462,7 +463,7 @@ def slopeintercept(line, tol=None):
         return np.array([[ERRORVAL, ERRORVAL]])
 
 
-"""Segmenting Functions"""
+# Segmenting Functions
 
 
 def segment_angle_kmeans(lines, k=2, **kwargs):
@@ -524,7 +525,7 @@ def segment_angle_linspace(lines, num=2):
     return segment_angle_range(lines, step)
 
 
-"""Intersection Functions"""
+# Intersection Functions
 
 
 def rhotheta_intersection(line1, line2, tolerance=1e-6, subpixel=False):
