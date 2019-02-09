@@ -25,9 +25,7 @@ def imshow_components(labels, *args, **kwargs):
 
 
 def imshow_autoscale(img, *args, **kwargs):
-    scaled = cv2.normalize(
-        img, None, np.min(img), np.max(img), cv2.NORM_MINMAX, cv2.CV_8U
-    )
+    scaled = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
     return imshow(scaled, *args, **kwargs)
 
 
