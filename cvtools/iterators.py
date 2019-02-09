@@ -66,14 +66,13 @@ class LineIterator:
         istep ^= bt_pix & s
         bt_pix ^= istep & s
 
+        assert dx >= 0 and dy >= 0
         if connectivity == 8:
-            assert dx >= 0 and dy >= 0
             self.err = dx - (dy + dy)
             self.plus_delta = dx + dx
             self.plus_step = int(istep)
             self.count = dx + 1
         else:
-            assert dx >= 0 and dy >= 0
             self.err = 0
             self.plus_delta = (dx + dx) + (dy + dy)
             self.plus_step = int(istep - bt_pix)

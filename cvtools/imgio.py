@@ -13,6 +13,7 @@ def imread(imgpath, *args, **kwargs):
         if p.exists():
             raise ValueError("Image is empty!")
         raise FileNotFoundError(f"Image path {p.absolute()} doesn't exist!")
+
     return img
 
 

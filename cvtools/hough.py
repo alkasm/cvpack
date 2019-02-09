@@ -15,8 +15,8 @@ ERRORVAL = np.nan
 
 
 def linetype(line):
-    """Returns 'RHOTHETA' if line is defined by two variables,
-    i.e. [[rho, theta]], or 'ENDPOINT' if line is defined by four
+    """Returns 'rhotheta' if line is defined by two variables,
+    i.e. [[rho, theta]], or 'endpoint' if line is defined by four
     variables, i.e. [[x1, y1, x2, y2]].
 
     Parameters
