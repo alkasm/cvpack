@@ -83,7 +83,7 @@ class VideoWriter:
 
     _nowriter = object()
 
-    def __init__(self, filename, fourcc="AVI1", fps=30, frameSize=None, **kwargs):
+    def __init__(self, filename, fourcc="mp4v", fps=30, frameSize=None, **kwargs):
         self.filename = str(filename)
         self.fourcc = (
             fourcc if isinstance(fourcc, int) else cv2.VideoWriter_fourcc(*fourcc)
@@ -100,11 +100,7 @@ class VideoWriter:
         return self
 
     def __exit__(self, *args, **kwargs):
-        try:
-            self.writer.release()
-        except AttributeError as e:
-            if self.writer is not self._nowriter:
-                raise e
+        self.release()
 
     def _makewriter(self, frame_size):
         return cv2.VideoWriter(
@@ -124,6 +120,13 @@ class VideoWriter:
                 self.writer = self._makewriter((w, h))
                 self.write(frame)
             else:
+                raise e
+
+    def release(self):
+        try:
+            self.writer.release()
+        except AttributeError as e:
+            if self.writer is not self._nowriter:
                 raise e
 
 
