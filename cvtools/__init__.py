@@ -5,4 +5,5 @@ from .imgproc import circular_mask, circular_gradient, resize_pad
 from .iterators import LineIterator
 from . import matlab
 from .transformations import warpAffinePadded, warpPerspectivePadded
-from .videoio import VideoCapture, VideoPlayer
+from .videoio import VideoCapture, VideoPlayer, VideoWriter
+from .imgio import *
