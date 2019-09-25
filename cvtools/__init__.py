@@ -7,3 +7,4 @@ from . import matlab
 from .transformations import warpAffinePadded, warpPerspectivePadded
 from .videoio import VideoCapture, VideoPlayer, VideoWriter
 from .imgio import *
+from .types import *
