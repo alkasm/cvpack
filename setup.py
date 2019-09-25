@@ -5,7 +5,7 @@ setup(
     author="Alexander Reynolds <alkasm>",
     author_email="ar@reynoldsalexander.com",
     url="https://github.com/alkasm/cvtools",
-    version="0.4",
+    version="0.4.1",
     packages=find_packages(),
     install_requires=["opencv-python"],
     license="MIT",

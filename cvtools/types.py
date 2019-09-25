@@ -32,6 +32,11 @@ class Size(NamedTuple):
         """true if empty"""
         return self.width <= 0 or self.height <= 0
 
+    @classmethod
+    def from_image(cls, image):
+        h, w = image.shape[:2]
+        return cls(w, h)
+
 
 class Rect(NamedTuple):
     x: float
