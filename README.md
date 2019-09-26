@@ -4,4 +4,4 @@ There's no core API that isn't prone to breaking on a whim.
 
 ## install
     
-    $ pip install https://github.com/alkasm/cvtools
+    $ pip install git+https://github.com/alkasm/cvtools
