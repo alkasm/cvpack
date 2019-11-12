@@ -10,6 +10,22 @@ def imshow(img, wait=0, window_name=""):
     return cv2.waitKey(wait) & 0xFF
 
 
+def imshow_ipython(img):
+    """Shows an image in a Jupyter notebook.
+    Raises ValueError if img is None or if img cannot be encoded.
+    """
+    if img is None:
+        raise ValueError("Image has no data (img is None).")
+
+    success, encoded = cv.imencode(".png", img)
+    if not success:
+        raise ValueError("Error encoding image.")
+
+    from IPython.display import Image, display
+
+    display(Image(encoded))
+
+
 def imshow_components(labels, *args, **kwargs):
     # Map component labels to hue val
     label_hue = np.uint8(179 * labels / np.max(labels))
