@@ -1,5 +1,33 @@
+"""
+This module mimics some of the OpenCV built-in types that don't get translated
+into Python directly. Generally, these just get mapped to/from tuples.
+
+However, a lot of OpenCV code would benefit from types that describe the tuple,
+in addition to named attributes. As OpenCV expects tuples for these datatypes,
+subclassing from tuples and namedtuples allows for flexibility without breaking
+capability.
+
+Wherever it made sense, functionality was copied from OpenCV. For overloaded
+CPP functions, there is not a hard rule for deciding which version becomes the
+defacto Python method, but in some cases, both have been provided. Alternative
+constructors are given in the usual Python way---as classmethods prepended with
+the verb "from".
+
+Some liberties have been taken with respect to naming. In particular, camelCase
+method names have been translated to snake_case. Some methods are provided that
+OpenCV doesn't contain. These methods are prepended with an underscore to show
+that they are not part of OpenCV's API, but they are intended for use.
+
+Aside from Scalars (where you can use a numpy array for vector operations),
+the usual arithmetic operations available in OpenCV are available here.
+
+You can average two points by adding them and dividing by two; you can add a
+point to a rect to shift it; and so on.
+"""
+
 from typing import NamedTuple
 import numpy as np
+import cv2 as cv
 
 
 class _IterOps:
@@ -40,9 +68,8 @@ class Point(NamedTuple, _IterOps):
 
     def inside(self, rect):
         """checks whether the point is inside the specified retangle"""
-        return (rect.x <= self.x <= rect.x + rect.width) and (
-            rect.y <= self.y <= rect.y + rect.height
-        )
+        rect = Rect(*rect)
+        return rect.contains(self)
 
 
 class Point3(NamedTuple, _IterOps):
@@ -269,3 +296,39 @@ class RotatedRect(NamedTuple):
         size = Size(width, height)
 
         return cls(center, size, angle)
+
+
+class Scalar(tuple):
+    def __new__(cls, v0=0, v1=0, v2=0, v3=0):
+        return super().__new__(cls, [v0, v1, v2, v3])
+
+    def conj(self):
+        v0, v1, v2, v3 = self
+        return type(self)(v0, -v1, -v2, -v3)
+
+    def is_real(self):
+        v0, v1, v2, v3 = self
+        return v1 == v2 == v3 == 0
+
+    def mul(self, other, scale=1):
+        other = Scalar(*other)
+        return type(self)(scale * v * w for v, w in zip(self, other))
+
+    @classmethod
+    def all(cls, v0):
+        return cls(v0, v0, v0, v0)
+
+
+class TermCriteria(NamedTuple):
+    type: int = 0
+    max_count: int = 0
+    epsilon: float = 0
+
+    COUNT = cv.TermCriteria_COUNT
+    MAX_ITER = cv.TermCriteria_MAX_ITER
+    EPS = cv.TermCriteria_EPS
+
+    def is_valid(self):
+        is_count = (self.type & self.COUNT) and self.max_count > 0
+        is_eps = (self.type & self.EPS) and not np.isna(self.epsilon)
+        return is_count or is_eps
