@@ -1,0 +1,17 @@
+[build-system]
+requires = ["flit_core >=2,<3"]
+build-backend = "flit_core.buildapi"
+
+[tool.flit.metadata]
+module = "cvtools"
+dist-name = "cvtools-alkasm"
+author = "Alexander Reynolds"
+author-email = "ar@reynoldsalexander.com"
+home-page = "https://github.com/alkasm/cvtools"
+description-file = "README.md"
+requires-python = ">=3.6"
+classifiers = [
+    "Programming Language :: Python :: 3",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: OS Independent",
+]
