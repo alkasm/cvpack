@@ -17,7 +17,7 @@ def imshow_ipython(img):
     if img is None:
         raise ValueError("Image has no data (img is None).")
 
-    success, encoded = cv.imencode(".png", img)
+    success, encoded = cv2.imencode(".png", img)
     if not success:
         raise ValueError("Error encoding image.")
 
