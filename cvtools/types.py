@@ -212,6 +212,15 @@ class Rect(NamedTuple):
         w, h = size
         return cls(x, y, w, h)
 
+    @classmethod
+    def from_center(cls, center, size):
+        """Alternative constructor using a center point and size."""
+        w, h = size
+        xc, yc = center
+        x = xc - w/2
+        y = yc - h/2
+        return cls(x, y, w, h)
+
     def _slice(self):
         """Returns a slice for a numpy array. Not included in OpenCV.
 
