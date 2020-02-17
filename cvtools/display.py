@@ -1,4 +1,13 @@
-import cv2
+from typing import Optional
+
+# Display image in browser (for working in interpreters without a GUI)
+from http.server import BaseHTTPRequestHandler, HTTPServer
+import webbrowser
+import base64
+from concurrent.futures import ThreadPoolExecutor
+
+import cv2 as cv
+import numpy as np
 
 
 def imshow(img, wait=0, window_name=""):
@@ -6,34 +15,39 @@ def imshow(img, wait=0, window_name=""):
         raise ValueError(
             "Image is empty; ensure you are reading from the correct path."
         )
-    cv2.imshow(window_name, img)
-    return cv2.waitKey(wait) & 0xFF
+    cv.imshow(window_name, img)
+    return cv.waitKey(wait) & 0xFF
 
 
 def imshow_ipython(img):
     """Shows an image in a Jupyter notebook.
+
     Raises ValueError if img is None or if img cannot be encoded.
     """
     if img is None:
         raise ValueError("Image has no data (img is None).")
 
-    success, encoded = cv2.imencode(".png", img)
+    success, encoded = cv.imencode(".png", img)
     if not success:
         raise ValueError("Error encoding image.")
 
-    from IPython.display import Image, display
+    try:
+        from IPython.display import Image, display
 
-    display(Image(encoded))
+        display(Image(encoded))
+    except ImportError:
+        print("You must have IPython installed to use the IPython display.")
+        raise
 
 
 def imshow_components(labels, *args, **kwargs):
     # Map component labels to hue val
     label_hue = np.uint8(179 * labels / np.max(labels))
     blank_ch = 255 * np.ones_like(label_hue)
-    labeled_img = cv2.merge([label_hue, blank_ch, blank_ch])
+    labeled_img = cv.merge([label_hue, blank_ch, blank_ch])
 
     # cvt to BGR for display
-    labeled_img = cv2.cvtColor(labeled_img, cv2.COLOR_HSV2BGR)
+    labeled_img = cv.cvtColor(labeled_img, cv.COLOR_HSV2BGR)
 
     # set bg label to black
     labeled_img[label_hue == 0] = 0
@@ -41,22 +55,22 @@ def imshow_components(labels, *args, **kwargs):
 
 
 def imshow_autoscale(img, *args, **kwargs):
-    scaled = cv2.normalize(img, None, 0, 255, cv2.NORM_MINMAX, cv2.CV_8U)
+    scaled = cv.normalize(img, None, 0, 255, cv.NORM_MINMAX, cv.CV_8U)
     return imshow(scaled, *args, **kwargs)
 
 
 def imshow_enlarged(img, scale=10, grid=True, color=200, wait=0, window_name=""):
-    h, w = img.shape[:2]
-    r = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
     if grid:
         r = add_grid(img, scale, color)
+    else:
+        r = cv.resize(img, None, fx=scale, fy=scale, interpolation=cv.INTER_NEAREST)
     return imshow(r, wait, window_name)
 
 
 def add_grid(img, scale=10, color=200):
 
     h, w = img.shape[:2]
-    r = cv2.resize(img, None, fx=scale, fy=scale, interpolation=cv2.INTER_NEAREST)
+    r = cv.resize(img, None, fx=scale, fy=scale, interpolation=cv.INTER_NEAREST)
 
     partial_grid = np.zeros((scale, scale), dtype=bool)
     partial_grid[0, :] = True
@@ -65,24 +79,15 @@ def add_grid(img, scale=10, color=200):
     r[gridlines] = color
 
     pad_sizes = ((0, 1), (0, 1), (0, 0)) if len(img.shape) == 3 else ((0, 1), (0, 1))
-    r = np.pad(r, pad_sizes, "constant", constant_values)
+    r = np.pad(r, pad_sizes, "constant", color)
     r[-1, :] = color
     r[:, -1] = color
 
     return r
 
 
-# Display image in browser (for working in interpreters without a GUI)
-
-
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import webbrowser
-from concurrent.futures import ThreadPoolExecutor
-import base64
-
-
 def _html_imshow(img):
-    success, encoded_img = cv2.imencode(".png", img)
+    success, encoded_img = cv.imencode(".png", img)
 
     html = """
 <html>
@@ -104,6 +109,8 @@ def _html_imshow(img):
 
 
 class _ImshowRequestHandler(BaseHTTPRequestHandler):
+    imshow_route = ""
+    imshow_img = None
 
     # handle GET request from browser
     def do_GET(self):
@@ -119,10 +126,10 @@ class _ImshowRequestHandler(BaseHTTPRequestHandler):
         return
 
 
-def imshow_browser(img, server="localhost", port=32830, route="imshow"):
+def imshow_browser(img, host="localhost", port=32830, route="imshow"):
     """Display an image in a browser. 
     
-    Spins up a server to serve the image for a single request.
+    Spins up a single-request server to serve the image.
     Opens the browser to make that request, then shuts down the server.
     """
 
@@ -130,12 +137,10 @@ def imshow_browser(img, server="localhost", port=32830, route="imshow"):
         imshow_img = img
         imshow_route = route
 
-    host = "localhost"
-    port = 32830
     server = HTTPServer((host, port), ImshowRequestHandler)
     with ThreadPoolExecutor(max_workers=1) as executor:
         # handle_request() blocks, so submit in an executor.
         # the browser can open the window and get served the image,
         # at which point the submitted task is completed.
-        future = executor.submit(server.handle_request)
+        executor.submit(server.handle_request)
         webbrowser.open_new(f"http://{host}:{port}/{route}")

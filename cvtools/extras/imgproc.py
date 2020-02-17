@@ -1,4 +1,4 @@
-import cv2
+import cv2 as cv
 import numpy as np
 
 
@@ -9,7 +9,7 @@ def resize_pad(img, size, pad_color=(0, 0, 0), interpolation=None):
     aspect = w / h
 
     if interpolation is None:
-        interpolation = cv2.INTER_AREA if (h > sh) or (w > sw) else cv2.INTER_CUBIC
+        interpolation = cv.INTER_AREA if (h > sh) or (w > sw) else cv.INTER_CUBIC
 
     # compute scaling and pad sizing
     if aspect > 1:
@@ -27,9 +27,9 @@ def resize_pad(img, size, pad_color=(0, 0, 0), interpolation=None):
         padding = (0, 0, 0, 0)
 
     # scale and pad
-    scaled_img = cv2.resize(img, new_size, interpolation=interpolation)
-    scaled_img = cv2.copyMakeBorder(
-        scaled_img, *padding, borderType=cv2.BORDER_CONSTANT, value=pad_color
+    scaled_img = cv.resize(img, new_size, interpolation=interpolation)
+    scaled_img = cv.copyMakeBorder(
+        scaled_img, *padding, borderType=cv.BORDER_CONSTANT, value=pad_color
     )
 
     return scaled_img
@@ -46,8 +46,8 @@ def circular_gradient(w, h, center=None, radius=None, invert=False):
     radius = radius or min(w, h) // 2
 
     mask = np.zeros((h, w), dtype=np.uint8)
-    mask = cv2.circle(mask, center=center, radius=radius, color=255, thickness=-1)
-    grad = cv2.distanceTransform(mask, cv2.DIST_L2, 3)
+    mask = cv.circle(mask, center=center, radius=radius, color=255, thickness=-1)
+    grad = cv.distanceTransform(mask, cv.DIST_L2, 3)
     grad = grad / grad.max()
 
     if invert:

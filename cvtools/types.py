@@ -26,12 +26,17 @@ point to a rect to shift it; and so on.
 """
 
 from typing import NamedTuple
+import itertools
+from math import floor, ceil
 import numpy as np
 import cv2 as cv
 
 
 class _IterOps:
     """Generic mixin for arithmetic operations shared between Point & Size classes."""
+
+    def __iter__(self):
+        return self
 
     def __add__(self, other):
         return type(self)(a + b for a, b in zip(self, other))
@@ -139,8 +144,8 @@ class Rect(NamedTuple):
 
     def __add__(self, other):
         """Shift or alter the size of the rectangle.
-        𝚛𝚎𝚌𝚝 ± 𝚙𝚘𝚒𝚗𝚝 (shifting a rectangle by a certain offset)
-        𝚛𝚎𝚌𝚝 ± 𝚜𝚒𝚣𝚎 (expanding or shrinking a rectangle by a certain amount)
+        rect ± point (shifting a rectangle by a certain offset)
+        rect ± point (expanding or shrinking a rectangle by a certain amount)
         """
         if isinstance(other, Point):
             origin = Point(self.x + other.x, self.y + other.y)
@@ -155,8 +160,8 @@ class Rect(NamedTuple):
 
     def __sub__(self, other):
         """Shift or alter the size of the rectangle.
-        𝚛𝚎𝚌𝚝 ± 𝚙𝚘𝚒𝚗𝚝 (shifting a rectangle by a certain offset)
-        𝚛𝚎𝚌𝚝 ± 𝚜𝚒𝚣𝚎 (expanding or shrinking a rectangle by a certain amount)
+        rect ± point (shifting a rectangle by a certain offset)
+        rect ± point (expanding or shrinking a rectangle by a certain amount)
         """
         if isinstance(other, Point):
             origin = Point(self.x - other.x, self.y - other.y)
@@ -217,31 +222,25 @@ class Rect(NamedTuple):
         """Alternative constructor using a center point and size."""
         w, h = size
         xc, yc = center
-        x = xc - w/2
-        y = yc - h/2
+        x = xc - w / 2
+        y = yc - h / 2
         return cls(x, y, w, h)
 
-    def _slice(self):
+    @property
+    def slice(self):
         """Returns a slice for a numpy array. Not included in OpenCV.
 
-        img[rect._slice()] == img[rect.y : rect.y + rect.height, rect.x : rect.x + rect.width]
+        img[rect.slice] == img[rect.y : rect.y + rect.height, rect.x : rect.x + rect.width]
         """
         return slice(self.y, self.y + self.height), slice(self.x, self.x + self.width)
 
-    def _center(self):
+    @property
+    def center(self):
         """Returns the center of the rectangle as a point (xc, yc). Not included in OpenCV.
 
-        rect._center() == (rect.x + rect.width / 2, rect.y + rect.height / 2)
+        rect.center == (rect.x + rect.width / 2, rect.y + rect.height / 2)
         """
         return Point(self.x + self.width / 2, self.y + self.height / 2)
-
-
-def _floor(v):
-    return int(round(np.floor(v)))
-
-
-def _ceil(v):
-    return int(round(np.ceil(v)))
 
 
 class RotatedRect(NamedTuple):
@@ -252,9 +251,9 @@ class RotatedRect(NamedTuple):
     def bounding_rect(self):
         """returns the minimal rectangle containing the rotated rectangle"""
         pts = self.points()
-        r = Rect(
-            Point(_floor(min(pt.x for pt in pts)), _floor(min(pt.y for pt in pts))),
-            Point(_ceil(max(pt.x for pt in pts)), _ceil(max(pt.y for pt in pts))),
+        r = Rect.from_points(
+            Point(floor(min(pt.x for pt in pts)), floor(min(pt.y for pt in pts))),
+            Point(ceil(max(pt.x for pt in pts)), ceil(max(pt.y for pt in pts))),
         )
         return r
 
@@ -264,16 +263,16 @@ class RotatedRect(NamedTuple):
         a = np.sin(np.radians(self.angle)) * 0.5
 
         pt0 = Point(
-            center.x - a * self.size.height - b * self.size.width,
-            center.y + b * self.size.height - a * self.size.width,
+            self.center.x - a * self.size.height - b * self.size.width,
+            self.center.y + b * self.size.height - a * self.size.width,
         )
         pt1 = Point(
-            center.x + a * self.size.height - b * self.size.width,
-            center.y - b * self.size.height - a * self.size.width,
+            self.center.x + a * self.size.height - b * self.size.width,
+            self.center.y - b * self.size.height - a * self.size.width,
         )
 
-        pt2 = Point(2 * center.x - pt0.x, 2 * center.y - pt0.y)
-        pt3 = Point(2 * center.x - pt1.x, 2 * center.y - pt1.y)
+        pt2 = Point(2 * self.center.x - pt0.x, 2 * self.center.y - pt0.y)
+        pt3 = Point(2 * self.center.x - pt1.x, 2 * self.center.y - pt1.y)
 
         return [pt0, pt1, pt2, pt3]
 
@@ -281,8 +280,8 @@ class RotatedRect(NamedTuple):
     def from_points(cls, point1, point2, point3):
         """Any 3 end points of the RotatedRect. They must be given in order (either clockwise or anticlockwise)."""
         point1, point2, point3 = Point(*point1), Point(*point2), Point(*point3)
-        center = 0.5 * (point1 + point3)
-        vecs = [Point(point1 - point2), Point(point2 - point3)]
+        center = (point1 + point3) * 0.5
+        vecs = [Point(*(point1 - point2)), Point(*(point2 - point3))]
         x = max(np.linalg.norm(pt) for pt in (point1, point2, point3))
         a = min(np.linalg.norm(vecs[0]), np.linalg.norm(vecs[1]))
 
@@ -299,7 +298,7 @@ class RotatedRect(NamedTuple):
         wd_i = 1 if abs(vecs[1][1]) < abs(vecs[1][0]) else 0
         ht_i = (wd_i + 1) % 2
 
-        angle = np.degrees(np.atan(vecs[wd_i][1] / vecs[wd_i][0]))
+        angle = np.degrees(np.arctan2(vecs[wd_i][1], vecs[wd_i][0]))
         width = np.linalg.norm(vecs[wd_i])
         height = np.linalg.norm(vecs[ht_i])
         size = Size(width, height)
@@ -308,24 +307,26 @@ class RotatedRect(NamedTuple):
 
 
 class Scalar(tuple):
-    def __new__(cls, v0=0, v1=0, v2=0, v3=0):
-        return super().__new__(cls, [v0, v1, v2, v3])
+    def __new__(cls, sequence):
+        if len(sequence) > 4:
+            raise ValueError("Scalars have at most 4 elements.")
+        sequence = itertools.islice(itertools.chain(sequence, itertools.repeat(0)), 4)
+        return super().__new__(cls, sequence)
 
     def conj(self):
         v0, v1, v2, v3 = self
-        return type(self)(v0, -v1, -v2, -v3)
+        return type(self)([v0, -v1, -v2, -v3])
 
     def is_real(self):
         v0, v1, v2, v3 = self
         return v1 == v2 == v3 == 0
 
     def mul(self, other, scale=1):
-        other = Scalar(*other)
-        return type(self)(scale * v * w for v, w in zip(self, other))
+        return type(self)([scale * v * w for v, w in zip(self, other)])
 
     @classmethod
     def all(cls, v0):
-        return cls(v0, v0, v0, v0)
+        return cls([v0] * 4)
 
 
 class TermCriteria(NamedTuple):
@@ -339,5 +340,5 @@ class TermCriteria(NamedTuple):
 
     def is_valid(self):
         is_count = (self.type & self.COUNT) and self.max_count > 0
-        is_eps = (self.type & self.EPS) and not np.isna(self.epsilon)
+        is_eps = (self.type & self.EPS) and not np.isnan(self.epsilon)
         return is_count or is_eps

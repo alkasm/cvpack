@@ -1,7 +1,7 @@
-import cv2
+import cv2 as cv
 
 
-VIDEO_CAPTURE_PROPS_LIST = [
+_VIDEO_CAPTURE_PROPS_LIST = [
     "CAP_PROP_POS_MSEC",
     "CAP_PROP_POS_FRAMES",
     "CAP_PROP_POS_AVI_RATIO",
@@ -13,12 +13,12 @@ VIDEO_CAPTURE_PROPS_LIST = [
     "CAP_PROP_FORMAT",
 ]
 
-VIDEO_CAPTURE_PROPS = {
-    prop.split("CAP_PROP_").pop().lower(): prop for prop in VIDEO_CAPTURE_PROPS_LIST
+_VIDEO_CAPTURE_PROPS = {
+    prop.split("CAP_PROP_").pop().lower(): prop for prop in _VIDEO_CAPTURE_PROPS_LIST
 }
 
 
-def add_props(props):
+def _add_props(props):
     def deco(cls):
         for prop in props:
             setattr(cls, prop, VideoCaptureProperty(prop))
@@ -28,35 +28,34 @@ def add_props(props):
 
 
 class VideoCaptureProperty:
+    """Descriptors to alias cap.get(cv.CAP_PROP_*) and cap.set(cv.CAP_PROP_*, value).
+
+    Raises AttributeError when setting if that property is not supported.
+    """
 
     _set_err = (
         "The property {p} is not supported by\n"
-        "the backend used by the cv2.VideoCapture() instance."
-    )
-    _docstring = (
-        "Alias for cap.get(cv2.{p}) and cap.set(cv2.{p}, value).\n"
-        "Raises AttributeError when setting if that property is not supported.\n"
+        "the backend used by the cv.VideoCapture() instance."
     )
 
     def __init__(self, name):
         self.name = name
-        self.prop = getattr(cv2, VIDEO_CAPTURE_PROPS[name])
-        self.__doc__ = self._docstring.format(p=VIDEO_CAPTURE_PROPS[name])
+        self.prop = getattr(cv, _VIDEO_CAPTURE_PROPS[name])
 
     def __get__(self, obj, objtype=None):
         return obj.cap.get(self.prop)
 
     def __set__(self, obj, value):
         if not obj.cap.set(self.prop, value):
-            raise AttributeError(self._set_err.format(p=VIDEO_CAPTURE_PROPS[self.name]))
+            raise AttributeError(self._set_err.format(p=_VIDEO_CAPTURE_PROPS[self.name]))
 
 
-@add_props(VIDEO_CAPTURE_PROPS.keys())
+@_add_props(_VIDEO_CAPTURE_PROPS.keys())
 class VideoCapture:
-    """An adapter for `cv2.VideoCapture`, giving a more Pythonic interface."""
+    """An adapter for `cv.VideoCapture`, giving a more Pythonic interface."""
 
     def __init__(self, *args, **kwargs):
-        self.cap = cv2.VideoCapture(*args, **kwargs)
+        self.cap = cv.VideoCapture(*args, **kwargs)
         if not self.cap.isOpened():
             raise ValueError("Unable to open video source:", *args, **kwargs)
 
@@ -86,7 +85,7 @@ class VideoWriter:
     def __init__(self, filename, fourcc="mp4v", fps=30, frameSize=None, **kwargs):
         self.filename = str(filename)
         self.fourcc = (
-            fourcc if isinstance(fourcc, int) else cv2.VideoWriter_fourcc(*fourcc)
+            fourcc if isinstance(fourcc, int) else cv.VideoWriter_fourcc(*fourcc)
         )
         self.fps = fps
         self.kwargs = kwargs
@@ -103,7 +102,7 @@ class VideoWriter:
         self.release()
 
     def _makewriter(self, frame_size):
-        return cv2.VideoWriter(
+        return cv.VideoWriter(
             filename=self.filename,
             fourcc=self.fourcc,
             fps=self.fps,
@@ -144,8 +143,8 @@ class VideoPlayer:
         framefunc = framefunc or (lambda frame: frame)
 
         for frame in self.cap:
-            cv2.imshow(window_name, framefunc(frame))
-            key = cv2.waitKey(self.rate) & 0xFF
+            cv.imshow(window_name, framefunc(frame))
+            key = cv.waitKey(self.rate) & 0xFF
             if key in self._actions["quit"]:
                 return
 
