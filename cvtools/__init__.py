@@ -11,4 +11,4 @@ from .videoio import VideoCapture, VideoPlayer, VideoWriter
 from .imgio import *
 from .types import *
 
-__version__ = "0.4.3"
+__version__ = "0.4.4"
