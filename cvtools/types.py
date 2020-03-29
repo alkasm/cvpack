@@ -27,6 +27,8 @@ point to a rect to shift it; and so on.
 
 from typing import NamedTuple, NamedTupleMeta
 import itertools
+import operator
+import functools
 from math import floor, ceil
 import numpy as np
 import cv2 as cv
@@ -39,32 +41,55 @@ class NamedTupleMetaBases(NamedTupleMeta):
         return type(typename, bases, {})
 
 
-class _IterOps:
+class _ArithmeticOperators:
     """Generic mixin for arithmetic operations shared between Point & Size classes."""
 
+    def unary_op(self, op):
+        return type(self)(*map(op, self))
+
+    def binary_op(self, other, op):
+        try:
+            return type(self)(*itertools.starmap(op, zip(self, other)))
+        except TypeError:
+            return type(self)(
+                *itertools.starmap(op, zip(self, itertools.repeat(other)))
+            )
+
     def __add__(self, other):
-        return type(self)(*(a + b for a, b in zip(self, other)))
+        return self.binary_op(other, operator.add)
 
     def __sub__(self, other):
-        return type(self)(*(a - b for a, b in zip(self, other)))
+        return self.binary_op(other, operator.sub)
 
     def __mul__(self, other):
-        if hasattr(other, "__iter__"):
-            return type(self)(*(a * b for a, b in zip(self, other)))
-        return type(self)(*(a * other for a in self))  # scalar multiplication
+        return self.binary_op(other, operator.mul)
 
     def __truediv__(self, other):
-        if hasattr(other, "__iter__"):
-            return type(self)(*(a / b for a, b in zip(self, other)))
-        return type(self)(*(a / other for a in self))  # scalar division
+        return self.binary_op(other, operator.truediv)
 
     def __floordiv__(self, other):
-        if hasattr(other, "__iter__"):
-            return type(self)(*(a // b for a, b in zip(self, other)))
-        return type(self)(*(a // other for a in self))  # scalar division
+        return self.binary_op(other, operator.floordiv)
+
+    def __pos__(self):
+        return self
+
+    def __neg__(self):
+        return self.unary_op(operator.neg)
+
+    def __abs__(self):
+        return self.unary_op(abs)
+
+    def __round__(self, ndigits=None):
+        return self.unary_op(functools.partial(round, ndigits=ndigits))
+
+    def __floor__(self):
+        return self.unary_op(floor)
+
+    def __ceil__(self):
+        return self.unary_op(ceil)
 
 
-class Point(_IterOps, metaclass=NamedTupleMetaBases):
+class Point(_ArithmeticOperators, metaclass=NamedTupleMetaBases):
     x: float
     y: float
 
@@ -83,7 +108,7 @@ class Point(_IterOps, metaclass=NamedTupleMetaBases):
         return rect.contains(self)
 
 
-class Point3(_IterOps, metaclass=NamedTupleMetaBases):
+class Point3(_ArithmeticOperators, metaclass=NamedTupleMetaBases):
     x: float
     y: float
     z: float
@@ -98,7 +123,7 @@ class Point3(_IterOps, metaclass=NamedTupleMetaBases):
         return self.dot(point)
 
 
-class Size(_IterOps, metaclass=NamedTupleMetaBases):
+class Size(_ArithmeticOperators, metaclass=NamedTupleMetaBases):
     width: float
     height: float
 

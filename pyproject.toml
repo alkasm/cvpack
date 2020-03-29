@@ -3,7 +3,7 @@ name = "cvtools-alkasm"
 packages = [
     { include = "cvtools" },
 ]
-version = "0.7.0"
+version = "0.8.0"
 description = "Utilities for computer vision in Python"
 authors = ["Alexander Reynolds <ar@reynoldsalexander.com>"]
 homepage = "https://github.com/alkasm/cvtools"
