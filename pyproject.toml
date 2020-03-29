@@ -1,17 +1,28 @@
-[build-system]
-requires = ["flit_core >=2,<3"]
-build-backend = "flit_core.buildapi"
-
-[tool.flit.metadata]
-module = "cvtools"
-dist-name = "cvtools-alkasm"
-author = "Alexander Reynolds"
-author-email = "ar@reynoldsalexander.com"
-home-page = "https://github.com/alkasm/cvtools"
-description-file = "README.md"
-requires-python = ">=3.6"
+[tool.poetry]
+name = "cvtools-alkasm"
+packages = [
+    { include = "cvtools" },
+]
+version = "0.7.0"
+description = "Utilities for computer vision in Python"
+authors = ["Alexander Reynolds <ar@reynoldsalexander.com>"]
+homepage = "https://github.com/alkasm/cvtools"
+repository = "https://github.com/alkasm/cvtools"
+readme = "README.md"
+keywords = ["cvtools", "computer vision", "cv", "opencv"]
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+
+[tool.poetry.dependencies]
+python = "^3.6"
+opencv-python = "!=4.2.0.32"
+
+[tool.poetry.dev-dependencies]
+pytest = "^5.4.1"
+
+[build-system]
+requires = ["poetry>=0.12"]
+build-backend = "poetry.masonry.api"

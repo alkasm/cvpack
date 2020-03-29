@@ -1,5 +1,4 @@
-__pycache__/
-*/__pycache__/
+**/__pycache__/
 .DS_Store
 .venv/
 .vscode/
@@ -7,3 +6,4 @@ docs/
 dist/
 venv/
 .idea/
+*.egg-info/
