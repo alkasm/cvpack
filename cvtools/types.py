@@ -25,40 +25,46 @@ You can average two points by adding them and dividing by two; you can add a
 point to a rect to shift it; and so on.
 """
 
-from typing import NamedTuple
+from typing import NamedTuple, NamedTupleMeta
 import itertools
 from math import floor, ceil
 import numpy as np
 import cv2 as cv
 
 
+class NamedTupleMetaBases(NamedTupleMeta):
+    def __new__(cls, typename, bases, ns):
+        cls_obj = super().__new__(cls, typename + "_nm_base", bases, ns)
+        bases = bases + (cls_obj,)
+        return type(typename, bases, {})
+
+
 class _IterOps:
     """Generic mixin for arithmetic operations shared between Point & Size classes."""
 
-    def __iter__(self):
-        return self
-
     def __add__(self, other):
-        return type(self)(a + b for a, b in zip(self, other))
+        return type(self)(*(a + b for a, b in zip(self, other)))
 
     def __sub__(self, other):
-        return type(self)(a - b for a, b in zip(self, other))
+        return type(self)(*(a - b for a, b in zip(self, other)))
 
     def __mul__(self, other):
         if hasattr(other, "__iter__"):
-            return type(self)(a * b for a, b in zip(self, other))
-        return type(self)(a * other for a in self)  # scalar multiplication
+            return type(self)(*(a * b for a, b in zip(self, other)))
+        return type(self)(*(a * other for a in self))  # scalar multiplication
 
-    def __div__(self, other):
+    def __truediv__(self, other):
         if hasattr(other, "__iter__"):
-            return type(self)(a / b for a, b in zip(self, other))
-        return type(self)(a / other for a in self)  # scalar division
+            return type(self)(*(a / b for a, b in zip(self, other)))
+        return type(self)(*(a / other for a in self))  # scalar division
 
-    def __eq__(self, other):
-        return all(a == b for a, b in zip(self, other))
+    def __floordiv__(self, other):
+        if hasattr(other, "__iter__"):
+            return type(self)(*(a // b for a, b in zip(self, other)))
+        return type(self)(*(a // other for a in self))  # scalar division
 
 
-class Point(NamedTuple, _IterOps):
+class Point(_IterOps, metaclass=NamedTupleMetaBases):
     x: float
     y: float
 
@@ -77,7 +83,7 @@ class Point(NamedTuple, _IterOps):
         return rect.contains(self)
 
 
-class Point3(NamedTuple, _IterOps):
+class Point3(_IterOps, metaclass=NamedTupleMetaBases):
     x: float
     y: float
     z: float
@@ -92,7 +98,7 @@ class Point3(NamedTuple, _IterOps):
         return self.dot(point)
 
 
-class Size(NamedTuple, _IterOps):
+class Size(_IterOps, metaclass=NamedTupleMetaBases):
     width: float
     height: float
 
