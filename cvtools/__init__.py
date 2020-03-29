@@ -1,7 +1,7 @@
 """Utilities for computer vision."""
 
-from .videoio import *
 from .imgio import *
 from .types import *
+from .videoio import *
 
 __version__ = "0.7.0"

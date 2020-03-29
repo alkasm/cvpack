@@ -86,13 +86,13 @@ def imshow_autoscale(img, *args, **kwargs):
 
 def imshow_enlarged(img, scale=10, grid=True, color=200, wait=0, window_name=""):
     if grid:
-        r = add_grid(img, scale, color)
+        r = _add_grid(img, scale, color)
     else:
         r = cv.resize(img, None, fx=scale, fy=scale, interpolation=cv.INTER_NEAREST)
     return imshow(r, wait, window_name)
 
 
-def add_grid(img, scale=10, color=200):
+def _add_grid(img, scale=10, color=200):
 
     h, w = img.shape[:2]
     r = cv.resize(img, None, fx=scale, fy=scale, interpolation=cv.INTER_NEAREST)
