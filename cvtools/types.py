@@ -78,7 +78,7 @@ class Point(_IterOps, metaclass=NamedTupleMetaBases):
         return self.dot(point)
 
     def inside(self, rect):
-        """checks whether the point is inside the specified retangle"""
+        """checks whether the point is inside the specified rectangle"""
         rect = Rect(*rect)
         return rect.contains(self)
 
