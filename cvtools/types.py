@@ -49,11 +49,10 @@ class _ArithmeticOperators:
 
     def binary_op(self, other, op):
         try:
-            return type(self)(*itertools.starmap(op, zip(self, other)))
+            iter_other = iter(other)
         except TypeError:
-            return type(self)(
-                *itertools.starmap(op, zip(self, itertools.repeat(other)))
-            )
+            iter_other = itertools.repeat(other)
+        return type(self)(*itertools.starmap(op, zip(self, iter_other)))
 
     def __add__(self, other):
         return self.binary_op(other, operator.add)
