@@ -8,8 +8,9 @@ description = "Utilities for computer vision in Python"
 authors = ["Alexander Reynolds <ar@reynoldsalexander.com>"]
 homepage = "https://github.com/alkasm/cvtools"
 repository = "https://github.com/alkasm/cvtools"
-readme = "README.md"
 keywords = ["cvtools", "computer vision", "cv", "opencv"]
+readme = "README.md"
+license = "MIT"
 classifiers = [
     "Programming Language :: Python :: 3",
     "License :: OSI Approved :: MIT License",
