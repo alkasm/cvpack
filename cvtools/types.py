@@ -34,11 +34,21 @@ import numpy as np
 import cv2 as cv
 
 
-class NamedTupleMetaBases(NamedTupleMeta):
+class _NamedTupleMetaBases(NamedTupleMeta):
     def __new__(cls, typename, bases, ns):
         cls_obj = super().__new__(cls, typename + "_nm_base", bases, ns)
         bases = bases + (cls_obj,)
         return type(typename, bases, {})
+
+
+def _flip_args(f):
+    "Create a new function from the original with the arguments reversed"
+
+    @functools.wraps(f)
+    def wrapped(*args):
+        return f(*args[::-1])
+
+    return wrapped
 
 
 class _ArithmeticOperators:
@@ -69,6 +79,18 @@ class _ArithmeticOperators:
     def __floordiv__(self, other):
         return self.binary_op(other, operator.floordiv)
 
+    __radd__ = __add__  # commutative
+    __rmul__ = __mul__  # commutative
+
+    def __rsub__(self, other):
+        return self.binary_op(other, _flip_args(operator.sub))
+
+    def __rtruediv__(self, other):
+        return self.binary_op(other, _flip_args(operator.truediv))
+
+    def __rfloordiv__(self, other):
+        return self.binary_op(other, _flip_args(operator.floordiv))
+
     def __pos__(self):
         return self
 
@@ -88,7 +110,7 @@ class _ArithmeticOperators:
         return self.unary_op(ceil)
 
 
-class Point(_ArithmeticOperators, metaclass=NamedTupleMetaBases):
+class Point(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
     x: float
     y: float
 
@@ -107,7 +129,7 @@ class Point(_ArithmeticOperators, metaclass=NamedTupleMetaBases):
         return rect.contains(self)
 
 
-class Point3(_ArithmeticOperators, metaclass=NamedTupleMetaBases):
+class Point3(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
     x: float
     y: float
     z: float
@@ -122,7 +144,7 @@ class Point3(_ArithmeticOperators, metaclass=NamedTupleMetaBases):
         return self.dot(point)
 
 
-class Size(_ArithmeticOperators, metaclass=NamedTupleMetaBases):
+class Size(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
     width: float
     height: float
 
@@ -183,7 +205,7 @@ class Rect(NamedTuple):
         elif isinstance(other, Size):
             size = Size(self.width + other.width, self.height + other.height)
             return self.from_origin(self.tl(), size)
-        raise TypeError(
+        raise NotImplementedError(
             "Adding to a rectangle generically is ambiguous.\n"
             "Add a Point to shift the top-left point, or a Size to expand the rectangle."
         )
@@ -199,7 +221,7 @@ class Rect(NamedTuple):
         elif isinstance(other, Size):
             size = Size(self.width - other.width, self.height - other.height)
             return self.from_origin(self.tl(), size)
-        raise TypeError(
+        raise NotImplementedError(
             "Subtracting from a rectangle generically is ambiguous.\n"
             "Subtract a Point to shift the top-left point, or a Size to shrink the rectangle."
         )

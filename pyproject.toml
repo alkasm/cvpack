@@ -23,6 +23,8 @@ opencv-python = "!=4.2.0.32"
 
 [tool.poetry.dev-dependencies]
 pytest = "^5.4.1"
+black = "^19.10b0"
+hypothesis = "^5.8.0"
 
 [build-system]
 requires = ["poetry>=0.12"]
