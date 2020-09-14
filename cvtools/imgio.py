@@ -3,6 +3,7 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import webbrowser
 import base64
 from concurrent.futures import ThreadPoolExecutor
+import urllib.request
 import cv2 as cv
 import numpy as np
 
@@ -20,6 +21,15 @@ def imread(imgpath, *args, **kwargs):
         raise FileNotFoundError(f"Image path {p.absolute()} doesn't exist!")
 
     return img
+
+
+def imread_web(url, *args, **kwargs):
+    """Reads an image from the web."""
+    r = urllib.request.urlopen(url)
+    if r.headers.get_content_maintype() != "image":
+        raise ValueError(f"Unknown content type {content_type}.")
+    buf = np.frombuffer(r.read(), np.uint8)
+    return cv.imdecode(buf, *args, **kwargs)
 
 
 def imwrite(imgpath, img, *args, **kwargs):
@@ -152,8 +162,8 @@ class _ImshowRequestHandler(BaseHTTPRequestHandler):
 
 
 def imshow_browser(img, host="localhost", port=32830, route="imshow"):
-    """Display an image in a browser. 
-    
+    """Display an image in a browser.
+
     Spins up a single-request server to serve the image.
     Opens the browser to make that request, then shuts down the server.
     """
