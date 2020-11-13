@@ -5,7 +5,7 @@ into Python directly. Generally, these just get mapped to/from tuples.
 However, a lot of OpenCV code would benefit from types that describe the tuple,
 in addition to named attributes. As OpenCV expects tuples for these datatypes,
 subclassing from tuples and namedtuples allows for flexibility without breaking
-capability.
+compatibility.
 
 Wherever it made sense, functionality was copied from OpenCV. For overloaded
 CPP functions, there is not a hard rule for deciding which version becomes the
@@ -14,9 +14,8 @@ constructors are given in the usual Python way---as classmethods prepended with
 the verb "from".
 
 Some liberties have been taken with respect to naming. In particular, camelCase
-method names have been translated to snake_case. Some methods are provided that
-OpenCV doesn't contain. These methods are prepended with an underscore to show
-that they are not part of OpenCV's API, but they are intended for use.
+method names have been translated to snake_case. Some methods and attributes
+are provided that OpenCV doesn't contain. 
 
 Aside from Scalars (where you can use a numpy array for vector operations),
 the usual arithmetic operations available in OpenCV are available here.
@@ -162,6 +161,11 @@ class Size(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
 
 
 class Rect(NamedTuple):
+    """Mimics cv::Rect while maintaining compatibility with OpenCV's Python bindings.
+
+    Reference: https://docs.opencv.org/master/d2/d44/classcv_1_1Rect__.html
+    """
+
     x: float
     y: float
     width: float
@@ -169,11 +173,11 @@ class Rect(NamedTuple):
 
     def tl(self):
         """top left point"""
-        return Size(self.x, self.y)
+        return Point(self.x, self.y)
 
     def br(self):
         """bottom right point"""
-        return Size(self.x + self.width, self.y + self.height)
+        return Point(self.x + self.width, self.y + self.height)
 
     def area(self):
         return self.height * self.width
@@ -197,11 +201,11 @@ class Rect(NamedTuple):
     def __add__(self, other):
         """Shift or alter the size of the rectangle.
         rect ± point (shifting a rectangle by a certain offset)
-        rect ± point (expanding or shrinking a rectangle by a certain amount)
+        rect ± size (expanding or shrinking a rectangle by a certain amount)
         """
         if isinstance(other, Point):
             origin = Point(self.x + other.x, self.y + other.y)
-            return self.from_origin(origin, self.size)
+            return self.from_origin(origin, self.size())
         elif isinstance(other, Size):
             size = Size(self.width + other.width, self.height + other.height)
             return self.from_origin(self.tl(), size)
@@ -213,44 +217,21 @@ class Rect(NamedTuple):
     def __sub__(self, other):
         """Shift or alter the size of the rectangle.
         rect ± point (shifting a rectangle by a certain offset)
-        rect ± point (expanding or shrinking a rectangle by a certain amount)
+        rect ± size (expanding or shrinking a rectangle by a certain amount)
         """
         if isinstance(other, Point):
             origin = Point(self.x - other.x, self.y - other.y)
-            return self.from_origin(origin, self.size)
+            return self.from_origin(origin, self.size())
         elif isinstance(other, Size):
-            size = Size(self.width - other.width, self.height - other.height)
-            return self.from_origin(self.tl(), size)
+            w = max(self.width - other.width, 0)
+            h = max(self.height - other.height, 0)
+            return self.from_origin(self.tl(), Size(w, h))
         raise NotImplementedError(
             "Subtracting from a rectangle generically is ambiguous.\n"
             "Subtract a Point to shift the top-left point, or a Size to shrink the rectangle."
         )
 
-    def __and__(self, other):
-        """rectangle intersection"""
-        other = type(self)(*other)
-        x = max(self.x, other.x)
-        y = max(self.y, other.y)
-        w = min(self.x + self.width, other.x + other.width) - x
-        h = min(self.y + self.height, other.y + other.height) - y
-
-        return type(self)(0, 0, 0, 0) if (w <= 0 or h <= 0) else type(self)(x, y, w, h)
-
-    def __or__(self, other):
-        """minimum area rectangle containing self and other."""
-        other = type(self)(*other)
-        if self.empty():
-            return other
-        elif not other.empty():
-            x = min(self.x, other.x)
-            y = min(self.y, other.y)
-            w = max(self.x + self.width, other.x + other.width) - x
-            h = max(self.y + self.height, other.y + other.height) - y
-            return type(self)(x, y, w, h)
-        return type(self)(0, 0, 0, 0)
-
     def __eq__(self, other):
-        other = type(self)(*other)
         return all(a == b for a, b in zip(self, other))
 
     @classmethod
@@ -293,6 +274,20 @@ class Rect(NamedTuple):
         rect.center == (rect.x + rect.width / 2, rect.y + rect.height / 2)
         """
         return Point(self.x + self.width / 2, self.y + self.height / 2)
+
+    def intersection(self, other):
+        """Return the area of the intersection of two rectangles."""
+        other = other if isinstance(other, type(self)) else type(self)(*other)
+        if self.empty() or other.empty():
+            return 0
+        w = min(self.x + self.width, other.x + other.width) - max(self.x, other.x)
+        h = min(self.y + self.height, other.y + other.height) - max(self.y, other.y)
+        return w * h
+
+    def union(self, other):
+        """Return the area of the union of two rectangles."""
+        other = other if isinstance(other, type(self)) else type(self)(*other)
+        return self.area() + other.area() - self.intersection(other)
 
 
 class RotatedRect(NamedTuple):
