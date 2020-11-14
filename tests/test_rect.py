@@ -121,9 +121,9 @@ def test_rect_slices(r):
 
 @given(RegionStrategy)
 def test_cv_rectangle(r):
-    img = np.zeros((200, 200), dtype=np.uint8)
-    pts_img = cv.rectangle(img, r.tl(), r.br(), color=255, thickness=-1)
-    rect_img = cv.rectangle(img, r, color=255, thickness=-1)
+    blank_img = np.zeros((200, 200), dtype=np.uint8)
+    pts_img = cv.rectangle(blank_img, r.tl(), r.br(), color=255, thickness=-1)
+    rect_img = cv.rectangle(blank_img, r, color=255, thickness=-1)
     assert np.all(pts_img == rect_img)
     assert np.all(pts_img[r.slice] == 255)
     assert np.all(rect_img[r.slice] == 255)
