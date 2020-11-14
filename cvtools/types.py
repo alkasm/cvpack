@@ -234,6 +234,29 @@ class Rect(NamedTuple):
     def __eq__(self, other):
         return all(a == b for a, b in zip(self, other))
 
+    def __and__(self, other):
+        """rectangle intersection"""
+        other = type(self)(*other)
+        x = max(self.x, other.x)
+        y = max(self.y, other.y)
+        w = min(self.x + self.width, other.x + other.width) - x
+        h = min(self.y + self.height, other.y + other.height) - y
+
+        return type(self)(0, 0, 0, 0) if (w <= 0 or h <= 0) else type(self)(x, y, w, h)
+
+    def __or__(self, other):
+        """minimum area rectangle containing self and other."""
+        other = type(self)(*other)
+        if self.empty():
+            return other
+        elif not other.empty():
+            x = min(self.x, other.x)
+            y = min(self.y, other.y)
+            w = max(self.x + self.width, other.x + other.width) - x
+            h = max(self.y + self.height, other.y + other.height) - y
+            return type(self)(x, y, w, h)
+        return self
+
     @classmethod
     def from_points(cls, top_left, bottom_right):
         """Alternative constructor using two points."""
