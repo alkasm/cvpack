@@ -53,10 +53,10 @@ def _flip_args(f):
 class _ArithmeticOperators:
     """Generic mixin for arithmetic operations shared between Point & Size classes."""
 
-    def unary_op(self, op):
+    def _unary_op(self, op):
         return type(self)(*map(op, self))
 
-    def binary_op(self, other, op):
+    def _binary_op(self, other, op):
         try:
             iter_other = iter(other)
         except TypeError:
@@ -64,49 +64,49 @@ class _ArithmeticOperators:
         return type(self)(*itertools.starmap(op, zip(self, iter_other)))
 
     def __add__(self, other):
-        return self.binary_op(other, operator.add)
+        return self._binary_op(other, operator.add)
 
     def __sub__(self, other):
-        return self.binary_op(other, operator.sub)
+        return self._binary_op(other, operator.sub)
 
     def __mul__(self, other):
-        return self.binary_op(other, operator.mul)
+        return self._binary_op(other, operator.mul)
 
     def __truediv__(self, other):
-        return self.binary_op(other, operator.truediv)
+        return self._binary_op(other, operator.truediv)
 
     def __floordiv__(self, other):
-        return self.binary_op(other, operator.floordiv)
+        return self._binary_op(other, operator.floordiv)
 
     __radd__ = __add__  # commutative
     __rmul__ = __mul__  # commutative
 
     def __rsub__(self, other):
-        return self.binary_op(other, _flip_args(operator.sub))
+        return self._binary_op(other, _flip_args(operator.sub))
 
     def __rtruediv__(self, other):
-        return self.binary_op(other, _flip_args(operator.truediv))
+        return self._binary_op(other, _flip_args(operator.truediv))
 
     def __rfloordiv__(self, other):
-        return self.binary_op(other, _flip_args(operator.floordiv))
+        return self._binary_op(other, _flip_args(operator.floordiv))
 
     def __pos__(self):
         return self
 
     def __neg__(self):
-        return self.unary_op(operator.neg)
+        return self._unary_op(operator.neg)
 
     def __abs__(self):
-        return self.unary_op(abs)
+        return self._unary_op(abs)
 
     def __round__(self, ndigits=None):
-        return self.unary_op(functools.partial(round, ndigits=ndigits))
+        return self._unary_op(functools.partial(round, ndigits=ndigits))
 
     def __floor__(self):
-        return self.unary_op(floor)
+        return self._unary_op(floor)
 
     def __ceil__(self):
-        return self.unary_op(ceil)
+        return self._unary_op(ceil)
 
 
 class Point(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
