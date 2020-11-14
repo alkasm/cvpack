@@ -1,22 +1,22 @@
-from functools import partial
-import cvtools
 import math
 import functools
 from hypothesis import given, assume
 from hypothesis.strategies import builds, integers, one_of, none, fractions
 import pytest
+from cvtools import Point, Point3, Size
+
 
 # Hard coded test cases
 
 
 def make_type_drop_arg(type_, *args):
-    if type_ == cvtools.Point3:
+    if type_ == Point3:
         return type_(*args)
     return type_(*args[:-1])
 
 
 def test_unary_operators():
-    for type_ in (cvtools.Point, cvtools.Point3, cvtools.Size):
+    for type_ in (Point, Point3, Size):
         T = functools.partial(make_type_drop_arg, type_)
         assert +T(1, 2, 1) == T(1, 2, 1)
         assert -T(1, 2, -1) == T(-1, -2, 1)
@@ -28,7 +28,7 @@ def test_unary_operators():
 
 
 def test_binary_operators():
-    for type_ in (cvtools.Point, cvtools.Point3, cvtools.Size):
+    for type_ in (Point, Point3, Size):
         T = functools.partial(make_type_drop_arg, type_)
         assert T(1, 3, 0) + T(1, 3, 1) == T(2, 6, 1)
         assert T(1, 3, 1.1) * T(1, 3, 2) == T(1, 9, 2.2)
@@ -38,7 +38,7 @@ def test_binary_operators():
 
 
 def test_binary_operators_broadcast():
-    for type_ in (cvtools.Point, cvtools.Point3, cvtools.Size):
+    for type_ in (Point, Point3, Size):
         T = functools.partial(make_type_drop_arg, type_)
         assert T(1, 3, 0) + 2 == T(3, 5, 2)
         assert T(1, 3, 0) * 2 == T(2, 6, 0)
@@ -48,7 +48,7 @@ def test_binary_operators_broadcast():
 
 
 def test_binary_operators_broadcast_rhs():
-    for type_ in (cvtools.Point, cvtools.Point3, cvtools.Size):
+    for type_ in (Point, Point3, Size):
         T = functools.partial(make_type_drop_arg, type_)
         assert 2 + T(1, 3, 0) == T(3, 5, 2)
         assert 2 * T(1, 3, 0) == T(2, 6, 0)
@@ -62,9 +62,9 @@ def test_binary_operators_broadcast_rhs():
 
 Rationals = fractions()
 PositiveRationals = fractions(min_value=0)
-PointStrategy = builds(cvtools.Point, Rationals, Rationals)
-Point3Strategy = builds(cvtools.Point3, Rationals, Rationals, Rationals)
-SizeStrategy = builds(cvtools.Size, PositiveRationals, PositiveRationals)
+PointStrategy = builds(Point, Rationals, Rationals)
+Point3Strategy = builds(Point3, Rationals, Rationals, Rationals)
+SizeStrategy = builds(Size, PositiveRationals, PositiveRationals)
 ArithmeticTupleStrategy = one_of(PointStrategy, Point3Strategy, SizeStrategy)
 
 

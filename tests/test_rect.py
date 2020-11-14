@@ -2,34 +2,32 @@ import cvtools
 from hypothesis import given, assume
 from hypothesis.strategies import builds, integers
 import numpy as np
+import cv2 as cv
+from cvtools import Rect
 from .test_point_size import Rationals, PositiveRationals, PointStrategy, SizeStrategy
 
 
 def test_rect_slice():
-    img_rect = cvtools.Rect(0, 0, 160, 90)
+    img_rect = Rect(0, 0, 160, 90)
     a = np.random.rand(img_rect.height, img_rect.width)
     assert np.all(a == a[img_rect.slice])
 
-    rect = cvtools.Rect(10, 12, 14, 16)
+    rect = Rect(10, 12, 14, 16)
     assert np.all(
         a[rect.y : rect.y + rect.height, rect.x : rect.x + rect.width] == a[rect.slice]
     )
 
-    empty_rect = cvtools.Rect(0, 0, 0, 0)
+    empty_rect = Rect(0, 0, 0, 0)
     assert a[empty_rect.slice].size == 0
 
 
-RectStrategy = builds(
-    cvtools.Rect, Rationals, Rationals, PositiveRationals, PositiveRationals
-)
+RectStrategy = builds(Rect, Rationals, Rationals, PositiveRationals, PositiveRationals)
 Integers100 = integers(min_value=0, max_value=100)
-RegionStrategy = builds(
-    cvtools.Rect, Integers100, Integers100, Integers100, Integers100
-)
+RegionStrategy = builds(Rect, Integers100, Integers100, Integers100, Integers100)
 
 
 @given(RectStrategy)
-def test_rect(r: cvtools.Rect):
+def test_rect(r):
     assert r.area() == r.width * r.height
     assert r.area() == r.size().area()
     assert r.tl() == (r.x, r.y)
@@ -43,8 +41,8 @@ def test_rect(r: cvtools.Rect):
     assert r.contains(r.tl())
     assert r.contains(r.br())
 
-    assert r == cvtools.Rect.from_center(r.center, r.size())
-    assert r == cvtools.Rect.from_points(r.tl(), r.br())
+    assert r == Rect.from_center(r.center, r.size())
+    assert r == Rect.from_points(r.tl(), r.br())
 
 
 @given(RectStrategy)
@@ -52,19 +50,19 @@ def test_rect_intersection_union(r):
     assert r.area() == r.intersection(r)
     assert r.area() == r.union(r)
 
-    extended_rect = cvtools.Rect.from_points(r.tl() - 1, r.br() + 1)
+    extended_rect = Rect.from_points(r.tl() - 1, r.br() + 1)
     assert r.area() == r.intersection(extended_rect)
     assert extended_rect.area() == r.union(extended_rect)
 
-    non_intersecting_rect = cvtools.Rect.from_origin(r.br(), r.size())
+    non_intersecting_rect = Rect.from_origin(r.br(), r.size())
     assert r.intersection(non_intersecting_rect) == 0
     assert r.union(non_intersecting_rect) == r.area() + non_intersecting_rect.area()
 
-    empty_rect = cvtools.Rect(0, 0, 0, 0)
+    empty_rect = Rect(0, 0, 0, 0)
     assert r.intersection(empty_rect) == 0
     assert r.union(empty_rect) == r.area()
 
-    intersecting_rect = cvtools.Rect.from_center(r.br(), r.size())
+    intersecting_rect = Rect.from_center(r.br(), r.size())
     assert r.intersection(intersecting_rect) == r.area() / 4
     assert r.union(intersecting_rect) == r.area() * 7 / 4
 
@@ -116,3 +114,18 @@ def test_rect_slices(r):
     assert np.all(img[r.y : r.y + r.height, r.x : r.x + r.width] == img[r.slice])
     assert img[r.slice].shape == r.size()[::-1]
     assert img[r.slice].size == r.area()
+
+
+# OpenCV functions
+
+
+@given(RegionStrategy)
+def test_cv_rectangle(r):
+    img = np.zeros((200, 200), dtype=np.uint8)
+    pts_img = cv.rectangle(img, r.tl(), r.br(), color=255, thickness=-1)
+    rect_img = cv.rectangle(img, r, color=255, thickness=-1)
+    assert np.all(pts_img == rect_img)
+    assert np.all(pts_img[r.slice] == 255)
+    assert np.all(rect_img[r.slice] == 255)
+    assert not np.any((pts_img == 0)[r.slice])
+    assert not np.any((rect_img == 0)[r.slice])
