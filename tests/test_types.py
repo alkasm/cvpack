@@ -84,6 +84,10 @@ ArithmeticTupleStrategy = one_of(PointStrategy, Point3Strategy, SizeStrategy)
 RectStrategy = builds(
     cvtools.Rect, Rationals, Rationals, PositiveRationals, PositiveRationals
 )
+Integers100 = integers(min_value=0, max_value=100)
+RegionStrategy = builds(
+    cvtools.Rect, Integers100, Integers100, Integers100, Integers100
+)
 
 
 @given(ArithmeticTupleStrategy)
@@ -216,3 +220,11 @@ def test_rect_size_ops(r, s):
     assert c.size() == r.size() - s
     assert c.width <= r.width
     assert c.height <= r.height
+
+
+@given(RegionStrategy)
+def test_rect_slices(r):
+    img = np.random.rand(200, 200)
+    assert np.all(img[r.y : r.y + r.height, r.x : r.x + r.width] == img[r.slice])
+    assert img[r.slice].shape == r.size()[::-1]
+    assert img[r.slice].size == r.area()
