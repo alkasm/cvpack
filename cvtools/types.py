@@ -51,7 +51,7 @@ def _flip_args(f):
 
 
 class _ArithmeticOperators:
-    """Generic mixin for arithmetic operations shared between Point & Size classes."""
+    """Generic mixin for arithmetic operations shared between Point, Size, and Scalar classes."""
 
     def _unary_op(self, op):
         return type(self)(*map(op, self))
@@ -313,6 +313,29 @@ class Rect(NamedTuple):
         return self.area() + other.area() - self.intersection(other)
 
 
+class Scalar(_ArithmeticOperators, tuple):
+    def __new__(cls, *sequence):
+        if len(sequence) > 4:
+            raise ValueError("Scalars have at most 4 elements.")
+        sequence = itertools.islice(itertools.chain(sequence, itertools.repeat(0)), 4)
+        return super().__new__(cls, sequence)
+
+    def conj(self):
+        v0, v1, v2, v3 = self
+        return type(self)([v0, -v1, -v2, -v3])
+
+    def is_real(self):
+        v0, v1, v2, v3 = self
+        return v1 == v2 == v3 == 0
+
+    def mul(self, other, scale=1):
+        return type(self)([scale * v * w for v, w in zip(self, other)])
+
+    @classmethod
+    def all(cls, v0):
+        return cls(v0, v0, v0, v0)
+
+
 class RotatedRect(NamedTuple):
     center: Point
     size: Size
@@ -374,29 +397,6 @@ class RotatedRect(NamedTuple):
         size = Size(width, height)
 
         return cls(center, size, angle)
-
-
-class Scalar(tuple):
-    def __new__(cls, sequence):
-        if len(sequence) > 4:
-            raise ValueError("Scalars have at most 4 elements.")
-        sequence = itertools.islice(itertools.chain(sequence, itertools.repeat(0)), 4)
-        return super().__new__(cls, sequence)
-
-    def conj(self):
-        v0, v1, v2, v3 = self
-        return type(self)([v0, -v1, -v2, -v3])
-
-    def is_real(self):
-        v0, v1, v2, v3 = self
-        return v1 == v2 == v3 == 0
-
-    def mul(self, other, scale=1):
-        return type(self)([scale * v * w for v, w in zip(self, other)])
-
-    @classmethod
-    def all(cls, v0):
-        return cls([v0] * 4)
 
 
 class TermCriteria(NamedTuple):
