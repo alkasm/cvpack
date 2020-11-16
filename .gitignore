@@ -9,3 +9,4 @@ dist/
 venv/
 .idea/
 *.egg-info/
+opencv-cpp-test/

@@ -129,37 +129,37 @@ def blank_img():
     return np.zeros((max_size, max_size), dtype=np.uint8)
 
 
-ImagePoint = builds(
+ImagePointStrategy = builds(
     Point,
     integers(min_value=0, max_value=max_size - 1),
     integers(min_value=0, max_value=max_size - 1),
 )
-EllipseSize = builds(
+EllipseSizeStrategy = builds(
     Size,
     integers(min_value=1, max_value=max_size),
     integers(min_value=1, max_value=max_size),
 )
 
 
-@given(ImagePoint)
+@given(ImagePointStrategy)
 def test_cv_circle(p):
     img = cv.circle(blank_img(), p, 5, 255, -1)
     assert img[p.y, p.x] == 255
 
 
-@given(ImagePoint)
+@given(ImagePointStrategy)
 def test_cv_draw_marker(p):
     img = cv.drawMarker(blank_img(), p, 255)
     assert img[p.y, p.x] == 255
 
 
-@given(ImagePoint, EllipseSize)
+@given(ImagePointStrategy, EllipseSizeStrategy)
 def test_cv_ellipse(p, s):
     img = cv.ellipse(blank_img(), p, s, 0, 0, 360, 255, -1)
     assert img[p.y, p.x] == 255
 
 
-@given(ImagePoint, ImagePoint)
+@given(ImagePointStrategy, ImagePointStrategy)
 def test_cv_line(p1, p2):
     img = cv.line(blank_img(), p1, p2, 255, 2)
     assert img[p1.y, p1.x] == 255

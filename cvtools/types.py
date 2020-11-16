@@ -25,6 +25,7 @@ point to a rect to shift it; and so on.
 """
 
 from typing import NamedTuple, NamedTupleMeta
+from collections.abc import Sequence
 import itertools
 import operator
 import functools
@@ -50,6 +51,10 @@ def _flip_args(f):
     return wrapped
 
 
+def _is_sequence(o):
+    return isinstance(o, (Sequence, np.ndarray)) and not isinstance(o, str)
+
+
 class _ArithmeticOperators:
     """Generic mixin for arithmetic operations shared between Point, Size, and Scalar classes."""
 
@@ -57,11 +62,8 @@ class _ArithmeticOperators:
         return type(self)(*map(op, self))
 
     def _binary_op(self, other, op):
-        try:
-            iter_other = iter(other)
-        except TypeError:
-            iter_other = itertools.repeat(other)
-        return type(self)(*itertools.starmap(op, zip(self, iter_other)))
+        other_seq = other if _is_sequence(other) else itertools.repeat(other)
+        return type(self)(*itertools.starmap(op, zip(self, other_seq)))
 
     def __add__(self, other):
         return self._binary_op(other, operator.add)
@@ -282,24 +284,22 @@ class Rect(NamedTuple):
         y = yc - h / 2
         return cls(x, y, w, h)
 
-    @property
     def slice(self):
         """Returns a slice for a numpy array. Not included in OpenCV.
 
-        img[rect.slice] == img[rect.y : rect.y + rect.height, rect.x : rect.x + rect.width]
+        img[rect.slice()] == img[rect.y : rect.y + rect.height, rect.x : rect.x + rect.width]
         """
         return slice(self.y, self.y + self.height), slice(self.x, self.x + self.width)
 
-    @property
     def center(self):
         """Returns the center of the rectangle as a point (xc, yc). Not included in OpenCV.
 
-        rect.center == (rect.x + rect.width / 2, rect.y + rect.height / 2)
+        rect.center() == (rect.x + rect.width / 2, rect.y + rect.height / 2)
         """
         return Point(self.x + self.width / 2, self.y + self.height / 2)
 
     def intersection(self, other):
-        """Return the area of the intersection of two rectangles."""
+        """Return the area of the intersection of two rectangles. Not included in OpenCV."""
         other = other if isinstance(other, type(self)) else type(self)(*other)
         if self.empty() or other.empty():
             return 0
@@ -308,32 +308,9 @@ class Rect(NamedTuple):
         return w * h
 
     def union(self, other):
-        """Return the area of the union of two rectangles."""
+        """Return the area of the union of two rectangles. Not included in OpenCV."""
         other = other if isinstance(other, type(self)) else type(self)(*other)
         return self.area() + other.area() - self.intersection(other)
-
-
-class Scalar(_ArithmeticOperators, tuple):
-    def __new__(cls, *sequence):
-        if len(sequence) > 4:
-            raise ValueError("Scalars have at most 4 elements.")
-        sequence = itertools.islice(itertools.chain(sequence, itertools.repeat(0)), 4)
-        return super().__new__(cls, sequence)
-
-    def conj(self):
-        v0, v1, v2, v3 = self
-        return type(self)([v0, -v1, -v2, -v3])
-
-    def is_real(self):
-        v0, v1, v2, v3 = self
-        return v1 == v2 == v3 == 0
-
-    def mul(self, other, scale=1):
-        return type(self)([scale * v * w for v, w in zip(self, other)])
-
-    @classmethod
-    def all(cls, v0):
-        return cls(v0, v0, v0, v0)
 
 
 class RotatedRect(NamedTuple):
@@ -356,16 +333,16 @@ class RotatedRect(NamedTuple):
         a = np.sin(np.radians(self.angle)) * 0.5
 
         pt0 = Point(
-            self.center.x - a * self.size.height - b * self.size.width,
-            self.center.y + b * self.size.height - a * self.size.width,
+            self.center().x - a * self.size.height - b * self.size.width,
+            self.center().y + b * self.size.height - a * self.size.width,
         )
         pt1 = Point(
-            self.center.x + a * self.size.height - b * self.size.width,
-            self.center.y - b * self.size.height - a * self.size.width,
+            self.center().x + a * self.size.height - b * self.size.width,
+            self.center().y - b * self.size.height - a * self.size.width,
         )
 
-        pt2 = Point(2 * self.center.x - pt0.x, 2 * self.center.y - pt0.y)
-        pt3 = Point(2 * self.center.x - pt1.x, 2 * self.center.y - pt1.y)
+        pt2 = Point(2 * self.center().x - pt0.x, 2 * self.center().y - pt0.y)
+        pt3 = Point(2 * self.center().x - pt1.x, 2 * self.center().y - pt1.y)
 
         return [pt0, pt1, pt2, pt3]
 
