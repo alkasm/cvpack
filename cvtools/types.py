@@ -376,14 +376,16 @@ class RotatedRect(NamedTuple):
         return cls(center, size, angle)
 
 
-class TermCriteria(NamedTuple):
+class _TermCriteriaType:
+    COUNT: int = cv.TermCriteria_COUNT
+    MAX_ITER: int = cv.TermCriteria_MAX_ITER
+    EPS: int = cv.TermCriteria_EPS
+
+
+class TermCriteria(_TermCriteriaType, metaclass=_NamedTupleMetaBases):
     type: int = 0
     max_count: int = 0
     epsilon: float = 0
-
-    COUNT = cv.TermCriteria_COUNT
-    MAX_ITER = cv.TermCriteria_MAX_ITER
-    EPS = cv.TermCriteria_EPS
 
     def is_valid(self):
         is_count = (self.type & self.COUNT) and self.max_count > 0
