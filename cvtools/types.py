@@ -351,12 +351,12 @@ class RotatedRect(NamedTuple):
         """Any 3 end points of the RotatedRect. They must be given in order (either clockwise or anticlockwise)."""
         point1, point2, point3 = Point(*point1), Point(*point2), Point(*point3)
         center = (point1 + point3) * 0.5
-        vecs = [Point(*(point1 - point2)), Point(*(point2 - point3))]
+        vecs = [point1 - point2, point2 - point3]
         x = max(np.linalg.norm(pt) for pt in (point1, point2, point3))
         a = min(np.linalg.norm(vecs[0]), np.linalg.norm(vecs[1]))
 
         # check that given sides are perpendicular
-        if abs(vecs[0].dot(vecs[1])) * a <= np.finfo(np.float32).eps * 9 * x * (
+        if abs(vecs[0].dot(vecs[1])) * a > np.finfo(np.float32).eps * 9 * x * (
             np.linalg.norm(vecs[0]) * np.linalg.norm(vecs[1])
         ):
             raise ValueError(
