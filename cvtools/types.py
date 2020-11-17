@@ -333,16 +333,16 @@ class RotatedRect(NamedTuple):
         a = np.sin(np.radians(self.angle)) * 0.5
 
         pt0 = Point(
-            self.center().x - a * self.size.height - b * self.size.width,
-            self.center().y + b * self.size.height - a * self.size.width,
+            self.center.x - a * self.size.height - b * self.size.width,
+            self.center.y + b * self.size.height - a * self.size.width,
         )
         pt1 = Point(
-            self.center().x + a * self.size.height - b * self.size.width,
-            self.center().y - b * self.size.height - a * self.size.width,
+            self.center.x + a * self.size.height - b * self.size.width,
+            self.center.y - b * self.size.height - a * self.size.width,
         )
 
-        pt2 = Point(2 * self.center().x - pt0.x, 2 * self.center().y - pt0.y)
-        pt3 = Point(2 * self.center().x - pt1.x, 2 * self.center().y - pt1.y)
+        pt2 = Point(2 * self.center.x - pt0.x, 2 * self.center.y - pt0.y)
+        pt3 = Point(2 * self.center.x - pt1.x, 2 * self.center.y - pt1.y)
 
         return [pt0, pt1, pt2, pt3]
 
