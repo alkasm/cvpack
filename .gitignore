@@ -10,3 +10,5 @@ venv/
 .idea/
 *.egg-info/
 opencv-cpp-test/
+*.egg-info/
+cpp/
