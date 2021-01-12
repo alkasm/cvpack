@@ -179,7 +179,7 @@ class Rect(NamedTuple):
         """
         if isinstance(other, Point):
             origin = Point(self.x + other.x, self.y + other.y)
-            return self.from_origin(origin, self.size)
+            return self.from_origin(origin, self.size())
         elif isinstance(other, Size):
             size = Size(self.width + other.width, self.height + other.height)
             return self.from_origin(self.tl(), size)
@@ -195,7 +195,7 @@ class Rect(NamedTuple):
         """
         if isinstance(other, Point):
             origin = Point(self.x - other.x, self.y - other.y)
-            return self.from_origin(origin, self.size)
+            return self.from_origin(origin, self.size())
         elif isinstance(other, Size):
             size = Size(self.width - other.width, self.height - other.height)
             return self.from_origin(self.tl(), size)
