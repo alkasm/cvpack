@@ -54,6 +54,5 @@ def test_rotated_rect_to_from_rect(r):
     assume(r.height > 1 and r.width > 1)
     for p1, p2, p3 in triplets:
         avgp = (p1 + p3) / 2
-        # raise Exception(p1, p2, p3, avgp)
         with pytest.raises(ValueError):
             rr = RotatedRect.from_points(p1, avgp, p3)
