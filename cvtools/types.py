@@ -5,7 +5,7 @@ into Python directly. Generally, these just get mapped to/from tuples.
 However, a lot of OpenCV code would benefit from types that describe the tuple,
 in addition to named attributes. As OpenCV expects tuples for these datatypes,
 subclassing from tuples and namedtuples allows for flexibility without breaking
-capability.
+compatibility.
 
 Wherever it made sense, functionality was copied from OpenCV. For overloaded
 CPP functions, there is not a hard rule for deciding which version becomes the
@@ -14,9 +14,8 @@ constructors are given in the usual Python way---as classmethods prepended with
 the verb "from".
 
 Some liberties have been taken with respect to naming. In particular, camelCase
-method names have been translated to snake_case. Some methods are provided that
-OpenCV doesn't contain. These methods are prepended with an underscore to show
-that they are not part of OpenCV's API, but they are intended for use.
+method names have been translated to snake_case. Some methods and attributes
+are provided that OpenCV doesn't contain. 
 
 Aside from Scalars (where you can use a numpy array for vector operations),
 the usual arithmetic operations available in OpenCV are available here.
@@ -26,6 +25,7 @@ point to a rect to shift it; and so on.
 """
 
 from typing import NamedTuple, NamedTupleMeta
+from collections.abc import Sequence
 import itertools
 import operator
 import functools
@@ -34,61 +34,84 @@ import numpy as np
 import cv2 as cv
 
 
-class NamedTupleMetaBases(NamedTupleMeta):
+class _NamedTupleMetaBases(NamedTupleMeta):
     def __new__(cls, typename, bases, ns):
         cls_obj = super().__new__(cls, typename + "_nm_base", bases, ns)
         bases = bases + (cls_obj,)
         return type(typename, bases, {})
 
 
-class _ArithmeticOperators:
-    """Generic mixin for arithmetic operations shared between Point & Size classes."""
+def _flip_args(f):
+    "Create a new function from the original with the arguments reversed"
 
-    def unary_op(self, op):
+    @functools.wraps(f)
+    def wrapped(*args):
+        return f(*args[::-1])
+
+    return wrapped
+
+
+def _is_sequence(o):
+    return isinstance(o, (Sequence, np.ndarray)) and not isinstance(o, str)
+
+
+class _ArithmeticOperators:
+    """Generic mixin for arithmetic operations shared between Point, Size, and Scalar classes."""
+
+    def _unary_op(self, op):
         return type(self)(*map(op, self))
 
-    def binary_op(self, other, op):
-        try:
-            iter_other = iter(other)
-        except TypeError:
-            iter_other = itertools.repeat(other)
-        return type(self)(*itertools.starmap(op, zip(self, iter_other)))
+    def _binary_op(self, other, op):
+        other_seq = other if _is_sequence(other) else itertools.repeat(other)
+        return type(self)(*itertools.starmap(op, zip(self, other_seq)))
 
     def __add__(self, other):
-        return self.binary_op(other, operator.add)
+        return self._binary_op(other, operator.add)
 
     def __sub__(self, other):
-        return self.binary_op(other, operator.sub)
+        return self._binary_op(other, operator.sub)
 
     def __mul__(self, other):
-        return self.binary_op(other, operator.mul)
+        return self._binary_op(other, operator.mul)
 
     def __truediv__(self, other):
-        return self.binary_op(other, operator.truediv)
+        return self._binary_op(other, operator.truediv)
 
     def __floordiv__(self, other):
-        return self.binary_op(other, operator.floordiv)
+        return self._binary_op(other, operator.floordiv)
+
+    __radd__ = __add__  # commutative
+    __rmul__ = __mul__  # commutative
+
+    def __rsub__(self, other):
+        return self._binary_op(other, _flip_args(operator.sub))
+
+    def __rtruediv__(self, other):
+        return self._binary_op(other, _flip_args(operator.truediv))
+
+    def __rfloordiv__(self, other):
+        return self._binary_op(other, _flip_args(operator.floordiv))
 
     def __pos__(self):
         return self
 
     def __neg__(self):
-        return self.unary_op(operator.neg)
+        return self._unary_op(operator.neg)
 
     def __abs__(self):
-        return self.unary_op(abs)
+        return self._unary_op(abs)
 
     def __round__(self, ndigits=None):
-        return self.unary_op(functools.partial(round, ndigits=ndigits))
+        return self._unary_op(functools.partial(round, ndigits=ndigits))
 
     def __floor__(self):
-        return self.unary_op(floor)
+        return self._unary_op(floor)
 
     def __ceil__(self):
-        return self.unary_op(ceil)
+        return self._unary_op(ceil)
 
 
-class Point(_ArithmeticOperators, metaclass=NamedTupleMetaBases):
+class Point(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
     x: float
     y: float
 
@@ -107,7 +130,7 @@ class Point(_ArithmeticOperators, metaclass=NamedTupleMetaBases):
         return rect.contains(self)
 
 
-class Point3(_ArithmeticOperators, metaclass=NamedTupleMetaBases):
+class Point3(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
     x: float
     y: float
     z: float
@@ -122,7 +145,7 @@ class Point3(_ArithmeticOperators, metaclass=NamedTupleMetaBases):
         return self.dot(point)
 
 
-class Size(_ArithmeticOperators, metaclass=NamedTupleMetaBases):
+class Size(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
     width: float
     height: float
 
@@ -140,6 +163,11 @@ class Size(_ArithmeticOperators, metaclass=NamedTupleMetaBases):
 
 
 class Rect(NamedTuple):
+    """Mimics cv::Rect while maintaining compatibility with OpenCV's Python bindings.
+
+    Reference: https://docs.opencv.org/master/d2/d44/classcv_1_1Rect__.html
+    """
+
     x: float
     y: float
     width: float
@@ -147,11 +175,11 @@ class Rect(NamedTuple):
 
     def tl(self):
         """top left point"""
-        return Size(self.x, self.y)
+        return Point(self.x, self.y)
 
     def br(self):
         """bottom right point"""
-        return Size(self.x + self.width, self.y + self.height)
+        return Point(self.x + self.width, self.y + self.height)
 
     def area(self):
         return self.height * self.width
@@ -175,7 +203,7 @@ class Rect(NamedTuple):
     def __add__(self, other):
         """Shift or alter the size of the rectangle.
         rect ± point (shifting a rectangle by a certain offset)
-        rect ± point (expanding or shrinking a rectangle by a certain amount)
+        rect ± size (expanding or shrinking a rectangle by a certain amount)
         """
         if isinstance(other, Point):
             origin = Point(self.x + other.x, self.y + other.y)
@@ -183,7 +211,7 @@ class Rect(NamedTuple):
         elif isinstance(other, Size):
             size = Size(self.width + other.width, self.height + other.height)
             return self.from_origin(self.tl(), size)
-        raise TypeError(
+        raise NotImplementedError(
             "Adding to a rectangle generically is ambiguous.\n"
             "Add a Point to shift the top-left point, or a Size to expand the rectangle."
         )
@@ -191,18 +219,22 @@ class Rect(NamedTuple):
     def __sub__(self, other):
         """Shift or alter the size of the rectangle.
         rect ± point (shifting a rectangle by a certain offset)
-        rect ± point (expanding or shrinking a rectangle by a certain amount)
+        rect ± size (expanding or shrinking a rectangle by a certain amount)
         """
         if isinstance(other, Point):
             origin = Point(self.x - other.x, self.y - other.y)
             return self.from_origin(origin, self.size())
         elif isinstance(other, Size):
-            size = Size(self.width - other.width, self.height - other.height)
-            return self.from_origin(self.tl(), size)
-        raise TypeError(
+            w = max(self.width - other.width, 0)
+            h = max(self.height - other.height, 0)
+            return self.from_origin(self.tl(), Size(w, h))
+        raise NotImplementedError(
             "Subtracting from a rectangle generically is ambiguous.\n"
             "Subtract a Point to shift the top-left point, or a Size to shrink the rectangle."
         )
+
+    def __eq__(self, other):
+        return all(a == b for a, b in zip(self, other))
 
     def __and__(self, other):
         """rectangle intersection"""
@@ -225,11 +257,7 @@ class Rect(NamedTuple):
             w = max(self.x + self.width, other.x + other.width) - x
             h = max(self.y + self.height, other.y + other.height) - y
             return type(self)(x, y, w, h)
-        return type(self)(0, 0, 0, 0)
-
-    def __eq__(self, other):
-        other = type(self)(*other)
-        return all(a == b for a, b in zip(self, other))
+        return self
 
     @classmethod
     def from_points(cls, top_left, bottom_right):
@@ -256,21 +284,33 @@ class Rect(NamedTuple):
         y = yc - h / 2
         return cls(x, y, w, h)
 
-    @property
     def slice(self):
         """Returns a slice for a numpy array. Not included in OpenCV.
 
-        img[rect.slice] == img[rect.y : rect.y + rect.height, rect.x : rect.x + rect.width]
+        img[rect.slice()] == img[rect.y : rect.y + rect.height, rect.x : rect.x + rect.width]
         """
         return slice(self.y, self.y + self.height), slice(self.x, self.x + self.width)
 
-    @property
     def center(self):
         """Returns the center of the rectangle as a point (xc, yc). Not included in OpenCV.
 
-        rect.center == (rect.x + rect.width / 2, rect.y + rect.height / 2)
+        rect.center() == (rect.x + rect.width / 2, rect.y + rect.height / 2)
         """
         return Point(self.x + self.width / 2, self.y + self.height / 2)
+
+    def intersection(self, other):
+        """Return the area of the intersection of two rectangles. Not included in OpenCV."""
+        other = other if isinstance(other, type(self)) else type(self)(*other)
+        if self.empty() or other.empty():
+            return 0
+        w = min(self.x + self.width, other.x + other.width) - max(self.x, other.x)
+        h = min(self.y + self.height, other.y + other.height) - max(self.y, other.y)
+        return w * h
+
+    def union(self, other):
+        """Return the area of the union of two rectangles. Not included in OpenCV."""
+        other = other if isinstance(other, type(self)) else type(self)(*other)
+        return self.area() + other.area() - self.intersection(other)
 
 
 class RotatedRect(NamedTuple):
@@ -311,12 +351,12 @@ class RotatedRect(NamedTuple):
         """Any 3 end points of the RotatedRect. They must be given in order (either clockwise or anticlockwise)."""
         point1, point2, point3 = Point(*point1), Point(*point2), Point(*point3)
         center = (point1 + point3) * 0.5
-        vecs = [Point(*(point1 - point2)), Point(*(point2 - point3))]
+        vecs = [point1 - point2, point2 - point3]
         x = max(np.linalg.norm(pt) for pt in (point1, point2, point3))
         a = min(np.linalg.norm(vecs[0]), np.linalg.norm(vecs[1]))
 
         # check that given sides are perpendicular
-        if abs(vecs[0].dot(vecs[1])) * a <= np.finfo(np.float32).eps * 9 * x * (
+        if abs(vecs[0].dot(vecs[1])) * a > np.finfo(np.float32).eps * 9 * x * (
             np.linalg.norm(vecs[0]) * np.linalg.norm(vecs[1])
         ):
             raise ValueError(
@@ -336,37 +376,16 @@ class RotatedRect(NamedTuple):
         return cls(center, size, angle)
 
 
-class Scalar(tuple):
-    def __new__(cls, sequence):
-        if len(sequence) > 4:
-            raise ValueError("Scalars have at most 4 elements.")
-        sequence = itertools.islice(itertools.chain(sequence, itertools.repeat(0)), 4)
-        return super().__new__(cls, sequence)
-
-    def conj(self):
-        v0, v1, v2, v3 = self
-        return type(self)([v0, -v1, -v2, -v3])
-
-    def is_real(self):
-        v0, v1, v2, v3 = self
-        return v1 == v2 == v3 == 0
-
-    def mul(self, other, scale=1):
-        return type(self)([scale * v * w for v, w in zip(self, other)])
-
-    @classmethod
-    def all(cls, v0):
-        return cls([v0] * 4)
+class _TermCriteriaType:
+    COUNT: int = cv.TermCriteria_COUNT
+    MAX_ITER: int = cv.TermCriteria_MAX_ITER
+    EPS: int = cv.TermCriteria_EPS
 
 
-class TermCriteria(NamedTuple):
+class TermCriteria(_TermCriteriaType, metaclass=_NamedTupleMetaBases):
     type: int = 0
     max_count: int = 0
     epsilon: float = 0
-
-    COUNT = cv.TermCriteria_COUNT
-    MAX_ITER = cv.TermCriteria_MAX_ITER
-    EPS = cv.TermCriteria_EPS
 
     def is_valid(self):
         is_count = (self.type & self.COUNT) and self.max_count > 0

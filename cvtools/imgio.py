@@ -26,7 +26,8 @@ def imread(imgpath, *args, **kwargs):
 def imread_web(url, *args, **kwargs):
     """Reads an image from the web."""
     r = urllib.request.urlopen(url)
-    if r.headers.get_content_maintype() != "image":
+    content_type = r.headers.get_content_maintype()
+    if content_type != "image":
         raise ValueError(f"Unknown content type {content_type}.")
     buf = np.frombuffer(r.read(), np.uint8)
     return cv.imdecode(buf, *args, **kwargs)
@@ -124,8 +125,7 @@ def _add_grid(img, scale=10, color=200):
 def _html_imshow(img):
     success, encoded_img = cv.imencode(".png", img)
 
-    html = """
-<html>
+    html = """<html>
 <title>cvtools/imshow</title>
 <head> 
     <meta charset="UTF-8">
