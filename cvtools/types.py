@@ -24,7 +24,7 @@ You can average two points by adding them and dividing by two; you can add a
 point to a rect to shift it; and so on.
 """
 
-from typing import NamedTuple, NamedTupleMeta
+from typing import NamedTuple, NamedTupleMeta  # type: ignore
 from collections.abc import Sequence
 import itertools
 import operator
