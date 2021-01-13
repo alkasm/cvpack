@@ -1,32 +1,6 @@
 import cv2 as cv
 
 
-_VIDEO_CAPTURE_PROPS_LIST = [
-    "CAP_PROP_POS_MSEC",
-    "CAP_PROP_POS_FRAMES",
-    "CAP_PROP_POS_AVI_RATIO",
-    "CAP_PROP_FRAME_WIDTH",
-    "CAP_PROP_FRAME_HEIGHT",
-    "CAP_PROP_FPS",
-    "CAP_PROP_FOURCC",
-    "CAP_PROP_FRAME_COUNT",
-    "CAP_PROP_FORMAT",
-]
-
-_VIDEO_CAPTURE_PROPS = {
-    prop.split("CAP_PROP_").pop().lower(): prop for prop in _VIDEO_CAPTURE_PROPS_LIST
-}
-
-
-def _add_props(props):
-    def deco(cls):
-        for prop in props:
-            setattr(cls, prop, VideoCaptureProperty(prop))
-        return cls
-
-    return deco
-
-
 class VideoCaptureProperty:
     """Descriptors to alias cap.get(cv.CAP_PROP_*) and cap.set(cv.CAP_PROP_*, value).
 
@@ -34,25 +8,33 @@ class VideoCaptureProperty:
     """
 
     _set_err = (
-        "The property {p} is not supported by\n"
+        "Unable to set the property {p}. The property might not be supported by\n"
         "the backend used by the cv.VideoCapture() instance."
     )
 
-    def __init__(self, name):
-        self.name = name
-        self.prop = getattr(cv, _VIDEO_CAPTURE_PROPS[name])
+    def __init__(self, prop):
+        self.prop = prop
 
     def __get__(self, obj, objtype=None):
         return obj.cap.get(self.prop)
 
     def __set__(self, obj, value):
         if not obj.cap.set(self.prop, value):
-            raise AttributeError(self._set_err.format(p=_VIDEO_CAPTURE_PROPS[self.name]))
+            raise AttributeError(self._set_err.format(p=self.prop))
 
 
-@_add_props(_VIDEO_CAPTURE_PROPS.keys())
 class VideoCapture:
     """An adapter for `cv.VideoCapture`, giving a more Pythonic interface."""
+
+    pos_msec = VideoCaptureProperty(cv.CAP_PROP_POS_MSEC)
+    pos_frames = VideoCaptureProperty(cv.CAP_PROP_POS_FRAMES)
+    pos_avi_ratio = VideoCaptureProperty(cv.CAP_PROP_POS_AVI_RATIO)
+    frame_width = VideoCaptureProperty(cv.CAP_PROP_FRAME_WIDTH)
+    frame_height = VideoCaptureProperty(cv.CAP_PROP_FRAME_HEIGHT)
+    fps = VideoCaptureProperty(cv.CAP_PROP_FPS)
+    fourcc = VideoCaptureProperty(cv.CAP_PROP_FOURCC)
+    frame_count = VideoCaptureProperty(cv.CAP_PROP_FRAME_COUNT)
+    format = VideoCaptureProperty(cv.CAP_PROP_FORMAT)
 
     def __init__(self, *args, **kwargs):
         self.cap = cv.VideoCapture(*args, **kwargs)
@@ -63,7 +45,7 @@ class VideoCapture:
         return getattr(self.cap, key)
 
     def __iter__(self):
-        """Resets the frame position to 0 at the start for repeatable iteration."""
+        """Iterate through frames in the video."""
         noread = (False, None)
         if self.cap.isOpened():
             for _, frame in iter(self.cap.read, noread):
@@ -131,7 +113,7 @@ class VideoWriter:
 
 class VideoPlayer:
 
-    _actions = {"quit": set(map(ord, "\x1bq"))}
+    _actions = {"quit": {ord("\x1b"), ord("q")}}
 
     def __init__(self, cap):
         self.cap = cap
@@ -140,10 +122,9 @@ class VideoPlayer:
     def play(self, window_name="VideoPlayer", framefunc=None, loop=False):
         """Plays through the video file with OpenCV's imshow()."""
 
-        framefunc = framefunc or (lambda frame: frame)
-
-        for frame in self.cap:
-            cv.imshow(window_name, framefunc(frame))
+        frames = iter(self.cap) if framefunc is None else map(framefunc, iter(self.cap))
+        for frame in frames:
+            cv.imshow(window_name, frame)
             key = cv.waitKey(self.rate) & 0xFF
             if key in self._actions["quit"]:
                 return
