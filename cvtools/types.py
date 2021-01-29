@@ -24,7 +24,8 @@ You can average two points by adding them and dividing by two; you can add a
 point to a rect to shift it; and so on.
 """
 
-from typing import NamedTuple, NamedTupleMeta  # type: ignore
+from typing import Any, Iterable, NamedTuple, Tuple
+from typing import NamedTupleMeta  # type: ignore
 from collections.abc import Sequence
 import itertools
 import operator
@@ -52,7 +53,10 @@ def _flip_args(f):
 
 
 def _is_sequence(o):
-    return isinstance(o, (Sequence, np.ndarray)) and not isinstance(o, str)
+    return isinstance(o, (Sequence, np.ndarray))
+
+
+# Seq = Union[Sequence, np.ndarray]
 
 
 class _ArithmeticOperators:
@@ -115,16 +119,16 @@ class Point(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
     x: float
     y: float
 
-    def cross(self, point):
+    def cross(self, point) -> float:
         return float(np.cross(self, point))
 
-    def dot(self, point):
+    def dot(self, point) -> float:
         return float(np.dot(self, point))
 
-    def ddot(self, point):
+    def ddot(self, point) -> float:
         return self.dot(point)
 
-    def inside(self, rect):
+    def inside(self, rect) -> bool:
         """checks whether the point is inside the specified rectangle"""
         rect = Rect(*rect)
         return rect.contains(self)
@@ -135,13 +139,13 @@ class Point3(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
     y: float
     z: float
 
-    def cross(self, point):
+    def cross(self, point) -> "Point3":
         return type(self)(*np.cross(self, point))
 
-    def dot(self, point):
+    def dot(self, point) -> float:
         return float(np.dot(self, point))
 
-    def ddot(self, point):
+    def ddot(self, point) -> float:
         return self.dot(point)
 
 
@@ -149,15 +153,15 @@ class Size(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
     width: float
     height: float
 
-    def area(self):
+    def area(self) -> float:
         return self.height * self.width
 
-    def empty(self):
+    def empty(self) -> bool:
         """true if empty"""
         return self.width <= 0 or self.height <= 0
 
     @classmethod
-    def from_image(cls, image):
+    def from_image(cls, image) -> "Size":
         h, w = image.shape[:2]
         return cls(w, h)
 
@@ -173,22 +177,22 @@ class Rect(NamedTuple):
     width: float
     height: float
 
-    def tl(self):
+    def tl(self) -> Point:
         """top left point"""
         return Point(self.x, self.y)
 
-    def br(self):
+    def br(self) -> Point:
         """bottom right point"""
         return Point(self.x + self.width, self.y + self.height)
 
-    def area(self):
+    def area(self) -> float:
         return self.height * self.width
 
-    def size(self):
+    def size(self) -> Size:
         """size (width, height) of the rectangle"""
         return Size(self.width, self.height)
 
-    def contains(self, point):
+    def contains(self, point) -> bool:
         """checks whether the rectangle contains the point"""
         point = Point(*point)
         return (
@@ -196,11 +200,11 @@ class Rect(NamedTuple):
             and self.y <= point.y <= self.y + self.height
         )
 
-    def empty(self):
+    def empty(self) -> bool:
         """true if empty"""
         return self.width <= 0 or self.height <= 0
 
-    def __add__(self, other):
+    def __add__(self, other) -> "Rect":
         """Shift or alter the size of the rectangle.
         rect ± point (shifting a rectangle by a certain offset)
         rect ± size (expanding or shrinking a rectangle by a certain amount)
@@ -216,7 +220,7 @@ class Rect(NamedTuple):
             "Add a Point to shift the top-left point, or a Size to expand the rectangle."
         )
 
-    def __sub__(self, other):
+    def __sub__(self, other) -> "Rect":
         """Shift or alter the size of the rectangle.
         rect ± point (shifting a rectangle by a certain offset)
         rect ± size (expanding or shrinking a rectangle by a certain amount)
@@ -233,10 +237,10 @@ class Rect(NamedTuple):
             "Subtract a Point to shift the top-left point, or a Size to shrink the rectangle."
         )
 
-    def __eq__(self, other):
+    def __eq__(self, other) -> bool:
         return all(a == b for a, b in zip(self, other))
 
-    def __and__(self, other):
+    def __and__(self, other) -> "Rect":
         """rectangle intersection"""
         other = type(self)(*other)
         x = max(self.x, other.x)
@@ -246,7 +250,7 @@ class Rect(NamedTuple):
 
         return type(self)(0, 0, 0, 0) if (w <= 0 or h <= 0) else type(self)(x, y, w, h)
 
-    def __or__(self, other):
+    def __or__(self, other) -> "Rect":
         """minimum area rectangle containing self and other."""
         other = type(self)(*other)
         if self.empty():
@@ -260,7 +264,7 @@ class Rect(NamedTuple):
         return self
 
     @classmethod
-    def from_points(cls, top_left, bottom_right):
+    def from_points(cls, top_left, bottom_right) -> "Rect":
         """Alternative constructor using two points."""
         x1, y1 = top_left
         x2, y2 = bottom_right
@@ -269,14 +273,14 @@ class Rect(NamedTuple):
         return cls(x1, y1, w, h)
 
     @classmethod
-    def from_origin(cls, origin, size):
+    def from_origin(cls, origin, size) -> "Rect":
         """Alternative constructor using a point and size."""
         x, y = origin
         w, h = size
         return cls(x, y, w, h)
 
     @classmethod
-    def from_center(cls, center, size):
+    def from_center(cls, center, size) -> "Rect":
         """Alternative constructor using a center point and size."""
         w, h = size
         xc, yc = center
@@ -284,21 +288,21 @@ class Rect(NamedTuple):
         y = yc - h / 2
         return cls(x, y, w, h)
 
-    def slice(self):
+    def slice(self) -> slice:
         """Returns a slice for a numpy array. Not included in OpenCV.
 
         img[rect.slice()] == img[rect.y : rect.y + rect.height, rect.x : rect.x + rect.width]
         """
         return slice(self.y, self.y + self.height), slice(self.x, self.x + self.width)
 
-    def center(self):
+    def center(self) -> Point:
         """Returns the center of the rectangle as a point (xc, yc). Not included in OpenCV.
 
         rect.center() == (rect.x + rect.width / 2, rect.y + rect.height / 2)
         """
         return Point(self.x + self.width / 2, self.y + self.height / 2)
 
-    def intersection(self, other):
+    def intersection(self, other) -> float:
         """Return the area of the intersection of two rectangles. Not included in OpenCV."""
         other = other if isinstance(other, type(self)) else type(self)(*other)
         if self.empty() or other.empty():
@@ -307,7 +311,7 @@ class Rect(NamedTuple):
         h = min(self.y + self.height, other.y + other.height) - max(self.y, other.y)
         return w * h
 
-    def union(self, other):
+    def union(self, other) -> float:
         """Return the area of the union of two rectangles. Not included in OpenCV."""
         other = other if isinstance(other, type(self)) else type(self)(*other)
         return self.area() + other.area() - self.intersection(other)
@@ -318,7 +322,7 @@ class RotatedRect(NamedTuple):
     size: Size
     angle: float
 
-    def bounding_rect(self):
+    def bounding_rect(self) -> Rect:
         """returns the minimal rectangle containing the rotated rectangle"""
         pts = self.points()
         r = Rect.from_points(
@@ -327,7 +331,7 @@ class RotatedRect(NamedTuple):
         )
         return r
 
-    def points(self):
+    def points(self) -> Tuple[Point, Point, Point, Point]:
         """returns 4 vertices of the rectangle. The order is bottom left, top left, top right, bottom right."""
         b = np.cos(np.radians(self.angle)) * 0.5
         a = np.sin(np.radians(self.angle)) * 0.5
@@ -344,7 +348,7 @@ class RotatedRect(NamedTuple):
         pt2 = Point(2 * self.center.x - pt0.x, 2 * self.center.y - pt0.y)
         pt3 = Point(2 * self.center.x - pt1.x, 2 * self.center.y - pt1.y)
 
-        return [pt0, pt1, pt2, pt3]
+        return pt0, pt1, pt2, pt3
 
     @classmethod
     def from_points(cls, point1, point2, point3):
