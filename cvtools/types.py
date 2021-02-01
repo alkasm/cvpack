@@ -24,107 +24,196 @@ You can average two points by adding them and dividing by two; you can add a
 point to a rect to shift it; and so on.
 """
 
-from typing import Any, Iterable, NamedTuple, Tuple
-from typing import NamedTupleMeta  # type: ignore
+from typing import NamedTuple, Tuple, Optional, Union
 from collections.abc import Sequence
-import itertools
-import operator
-import functools
 import enum
-from math import floor, ceil
 import numpy as np
 import cv2 as cv
 
-
-def _flip_args(f):
-    "Create a new function from the original with the arguments reversed"
-
-    @functools.wraps(f)
-    def wrapped(*args):
-        return f(*args[::-1])
-
-    return wrapped
+SeqOperable = Union[float, Sequence, np.ndarray]
 
 
-def _add_arithmetic_operators(cls):
-    def is_sequence(o):
-        return isinstance(o, (Sequence, np.ndarray))
-
-    def unary_op(op):
-        def f(self):
-            return self.__class__(*map(op, self))
-
-        return f
-
-    def binary_op(op):
-        def f(self, other):
-            other_seq = other if is_sequence(other) else itertools.repeat(other)
-            return self.__class__(*itertools.starmap(op, zip(self, other_seq)))
-
-        return f
-
-    def __round__(self, ndigits=None):
-        return unary_op(functools.partial(round, ndigits=ndigits))(self)
-
-    setattr(cls, "__add__", binary_op(operator.add))
-    setattr(cls, "__sub__", binary_op(operator.sub))
-    setattr(cls, "__mul__", binary_op(operator.mul))
-    setattr(cls, "__truediv__", binary_op(operator.truediv))
-    setattr(cls, "__floordiv__", binary_op(operator.floordiv))
-    setattr(cls, "__rsub__", binary_op(_flip_args(operator.sub)))
-    setattr(cls, "__rtruediv__", binary_op(_flip_args(operator.truediv)))
-    setattr(cls, "__rfloordiv__", binary_op(_flip_args(operator.floordiv)))
-    setattr(cls, "__radd__", cls.__add__)  # commutative
-    setattr(cls, "__rmul__", cls.__mul__)  # commutative
-    setattr(cls, "__pos__", unary_op(operator.pos))
-    setattr(cls, "__neg__", unary_op(operator.neg))
-    setattr(cls, "__abs__", unary_op(abs))
-    setattr(cls, "__round__", __round__)
-    setattr(cls, "__floor__", unary_op(floor))
-    setattr(cls, "__ceil__", unary_op(ceil))
-    return cls
-
-
-@_add_arithmetic_operators
 class Point(NamedTuple):
     x: float
     y: float
 
-    def cross(self, point) -> float:
+    def __add__(self, other: SeqOperable) -> "Point":
+        return self.__class__(*(np.array(self).__add__(np.array(other))))
+
+    def __sub__(self, other: SeqOperable) -> "Point":
+        return self.__class__(*(np.array(self).__sub__(np.array(other))))
+
+    def __mul__(self, other: SeqOperable) -> "Point":
+        return self.__class__(*(np.array(self).__mul__(np.array(other))))
+
+    def __truediv__(self, other: SeqOperable) -> "Point":
+        return self.__class__(*(np.array(self).__truediv__(np.array(other))))
+
+    def __floordiv__(self, other: SeqOperable) -> "Point":
+        return self.__class__(*(np.array(self).__floordiv__(np.array(other))))
+
+    def __rsub__(self, other: SeqOperable) -> "Point":
+        return self.__class__(*(np.array(self).__rsub__(np.array(other))))
+
+    def __rtruediv__(self, other: SeqOperable) -> "Point":
+        return self.__class__(*(np.array(self).__rtruediv__(np.array(other))))
+
+    def __rfloordiv__(self, other: SeqOperable) -> "Point":
+        return self.__class__(*(np.array(self).__rfloordiv__(np.array(other))))
+
+    def __radd__(self, other: SeqOperable) -> "Point":
+        return self.__class__(*(np.array(self).__radd__(np.array(other))))
+
+    def __rmul__(self, other: SeqOperable) -> "Point":
+        return self.__class__(*(np.array(self).__rmul__(np.array(other))))
+
+    def __pos__(self) -> "Point":
+        return self.__class__(*np.array(self).__pos__())
+
+    def __neg__(self) -> "Point":
+        return self.__class__(*np.array(self).__neg__())
+
+    def __abs__(self) -> "Point":
+        return self.__class__(*np.array(self).__abs__())
+
+    def __round__(self, ndigits: Optional[int] = None) -> "Point":
+        return self.__class__(*(round(v, ndigits=ndigits) for v in self))
+
+    def __floor__(self) -> "Point":
+        return self.__class__(*np.floor(self))
+
+    def __ceil__(self) -> "Point":
+        return self.__class__(*np.ceil(self))
+
+    def cross(self, point: "Point") -> float:
         return float(np.cross(self, point))
 
-    def dot(self, point) -> float:
+    def dot(self, point: "Point") -> float:
         return float(np.dot(self, point))
 
-    def ddot(self, point) -> float:
+    def ddot(self, point: "Point") -> float:
         return self.dot(point)
 
-    def inside(self, rect) -> bool:
+    def inside(self, rect: "Rect") -> bool:
         """checks whether the point is inside the specified rectangle"""
         rect = Rect(*rect)
         return rect.contains(self)
 
 
-@_add_arithmetic_operators
 class Point3(NamedTuple):
     x: float
     y: float
     z: float
 
-    def cross(self, point) -> "Point3":
-        return type(self)(*np.cross(self, point))
+    def __add__(self, other: SeqOperable) -> "Point3":
+        return self.__class__(*(np.array(self).__add__(np.array(other))))
 
-    def dot(self, point) -> float:
+    def __sub__(self, other: SeqOperable) -> "Point3":
+        return self.__class__(*(np.array(self).__sub__(np.array(other))))
+
+    def __mul__(self, other: SeqOperable) -> "Point3":
+        return self.__class__(*(np.array(self).__mul__(np.array(other))))
+
+    def __truediv__(self, other: SeqOperable) -> "Point3":
+        return self.__class__(*(np.array(self).__truediv__(np.array(other))))
+
+    def __floordiv__(self, other: SeqOperable) -> "Point3":
+        return self.__class__(*(np.array(self).__floordiv__(np.array(other))))
+
+    def __rsub__(self, other: SeqOperable) -> "Point3":
+        return self.__class__(*(np.array(self).__rsub__(np.array(other))))
+
+    def __rtruediv__(self, other: SeqOperable) -> "Point3":
+        return self.__class__(*(np.array(self).__rtruediv__(np.array(other))))
+
+    def __rfloordiv__(self, other: SeqOperable) -> "Point3":
+        return self.__class__(*(np.array(self).__rfloordiv__(np.array(other))))
+
+    def __radd__(self, other: SeqOperable) -> "Point3":
+        return self.__class__(*(np.array(self).__radd__(np.array(other))))
+
+    def __rmul__(self, other: SeqOperable) -> "Point3":
+        return self.__class__(*(np.array(self).__rmul__(np.array(other))))
+
+    def __pos__(self) -> "Point3":
+        return self.__class__(*np.array(self).__pos__())
+
+    def __neg__(self) -> "Point3":
+        return self.__class__(*np.array(self).__neg__())
+
+    def __abs__(self) -> "Point3":
+        return self.__class__(*np.array(self).__abs__())
+
+    def __round__(self, ndigits: Optional[int] = None) -> "Point3":
+        return self.__class__(*(round(v, ndigits=ndigits) for v in self))
+
+    def __floor__(self) -> "Point3":
+        return self.__class__(*np.floor(self))
+
+    def __ceil__(self) -> "Point3":
+        return self.__class__(*np.ceil(self))
+
+    def cross(self, point: "Point3") -> "Point3":
+        return self.__class__(*np.cross(self, point))
+
+    def dot(self, point: "Point3") -> float:
         return float(np.dot(self, point))
 
-    def ddot(self, point) -> float:
+    def ddot(self, point: "Point3") -> float:
         return self.dot(point)
 
 
-@_add_arithmetic_operators
 class Size(NamedTuple):
     width: float
     height: float
+
+    def __add__(self, other: SeqOperable) -> "Size":
+        return self.__class__(*(np.array(self).__add__(np.array(other))))
+
+    def __sub__(self, other: SeqOperable) -> "Size":
+        return self.__class__(*(np.array(self).__sub__(np.array(other))))
+
+    def __mul__(self, other: SeqOperable) -> "Size":
+        return self.__class__(*(np.array(self).__mul__(np.array(other))))
+
+    def __truediv__(self, other: SeqOperable) -> "Size":
+        return self.__class__(*(np.array(self).__truediv__(np.array(other))))
+
+    def __floordiv__(self, other: SeqOperable) -> "Size":
+        return self.__class__(*(np.array(self).__floordiv__(np.array(other))))
+
+    def __rsub__(self, other: SeqOperable) -> "Size":
+        return self.__class__(*(np.array(self).__rsub__(np.array(other))))
+
+    def __rtruediv__(self, other: SeqOperable) -> "Size":
+        return self.__class__(*(np.array(self).__rtruediv__(np.array(other))))
+
+    def __rfloordiv__(self, other: SeqOperable) -> "Size":
+        return self.__class__(*(np.array(self).__rfloordiv__(np.array(other))))
+
+    def __radd__(self, other: SeqOperable) -> "Size":
+        return self.__class__(*(np.array(self).__radd__(np.array(other))))
+
+    def __rmul__(self, other: SeqOperable) -> "Size":
+        return self.__class__(*(np.array(self).__rmul__(np.array(other))))
+
+    def __pos__(self) -> "Size":
+        return self.__class__(*np.array(self).__pos__())
+
+    def __neg__(self) -> "Size":
+        return self.__class__(*np.array(self).__neg__())
+
+    def __abs__(self) -> "Size":
+        return self.__class__(*np.array(self).__abs__())
+
+    def __round__(self, ndigits: Optional[int] = None) -> "Size":
+        return self.__class__(*(round(v, ndigits=ndigits) for v in self))
+
+    def __floor__(self) -> "Size":
+        return self.__class__(*np.floor(self))
+
+    def __ceil__(self) -> "Size":
+        return self.__class__(*np.ceil(self))
 
     def area(self) -> float:
         return self.height * self.width
@@ -134,7 +223,7 @@ class Size(NamedTuple):
         return self.width <= 0 or self.height <= 0
 
     @classmethod
-    def from_image(cls, image) -> "Size":
+    def from_image(cls, image: np.ndarray) -> "Size":
         h, w = image.shape[:2]
         return cls(w, h)
 
@@ -150,34 +239,7 @@ class Rect(NamedTuple):
     width: float
     height: float
 
-    def tl(self) -> Point:
-        """top left point"""
-        return Point(self.x, self.y)
-
-    def br(self) -> Point:
-        """bottom right point"""
-        return Point(self.x + self.width, self.y + self.height)
-
-    def area(self) -> float:
-        return self.height * self.width
-
-    def size(self) -> Size:
-        """size (width, height) of the rectangle"""
-        return Size(self.width, self.height)
-
-    def contains(self, point) -> bool:
-        """checks whether the rectangle contains the point"""
-        point = Point(*point)
-        return (
-            self.x <= point.x <= self.x + self.width
-            and self.y <= point.y <= self.y + self.height
-        )
-
-    def empty(self) -> bool:
-        """true if empty"""
-        return self.width <= 0 or self.height <= 0
-
-    def __add__(self, other) -> "Rect":
+    def __add__(self, other: Union[Point, Size]) -> "Rect":  # type: ignore[override]
         """Shift or alter the size of the rectangle.
         rect ± point (shifting a rectangle by a certain offset)
         rect ± size (expanding or shrinking a rectangle by a certain amount)
@@ -193,7 +255,7 @@ class Rect(NamedTuple):
             "Add a Point to shift the top-left point, or a Size to expand the rectangle."
         )
 
-    def __sub__(self, other) -> "Rect":
+    def __sub__(self, other: Union[Point, Size]) -> "Rect":  # type: ignore[override]
         """Shift or alter the size of the rectangle.
         rect ± point (shifting a rectangle by a certain offset)
         rect ± size (expanding or shrinking a rectangle by a certain amount)
@@ -210,22 +272,21 @@ class Rect(NamedTuple):
             "Subtract a Point to shift the top-left point, or a Size to shrink the rectangle."
         )
 
-    def __eq__(self, other) -> bool:
-        return all(a == b for a, b in zip(self, other))
-
-    def __and__(self, other) -> "Rect":
+    def __and__(self, other: "Rect") -> "Rect":
         """rectangle intersection"""
-        other = type(self)(*other)
         x = max(self.x, other.x)
         y = max(self.y, other.y)
         w = min(self.x + self.width, other.x + other.width) - x
         h = min(self.y + self.height, other.y + other.height) - y
 
-        return type(self)(0, 0, 0, 0) if (w <= 0 or h <= 0) else type(self)(x, y, w, h)
+        return (
+            self.__class__(0, 0, 0, 0)
+            if (w <= 0 or h <= 0)
+            else self.__class__(x, y, w, h)
+        )
 
-    def __or__(self, other) -> "Rect":
+    def __or__(self, other: "Rect") -> "Rect":
         """minimum area rectangle containing self and other."""
-        other = type(self)(*other)
         if self.empty():
             return other
         elif not other.empty():
@@ -233,11 +294,37 @@ class Rect(NamedTuple):
             y = min(self.y, other.y)
             w = max(self.x + self.width, other.x + other.width) - x
             h = max(self.y + self.height, other.y + other.height) - y
-            return type(self)(x, y, w, h)
+            return self.__class__(x, y, w, h)
         return self
 
+    def tl(self) -> Point:
+        """top left point"""
+        return Point(self.x, self.y)
+
+    def br(self) -> Point:
+        """bottom right point"""
+        return Point(self.x + self.width, self.y + self.height)
+
+    def area(self) -> float:
+        return self.height * self.width
+
+    def size(self) -> Size:
+        """size (width, height) of the rectangle"""
+        return Size(self.width, self.height)
+
+    def contains(self, point: Point) -> bool:
+        """checks whether the rectangle contains the point"""
+        return (
+            self.x <= point.x <= self.x + self.width
+            and self.y <= point.y <= self.y + self.height
+        )
+
+    def empty(self) -> bool:
+        """true if empty"""
+        return self.width <= 0 or self.height <= 0
+
     @classmethod
-    def from_points(cls, top_left, bottom_right) -> "Rect":
+    def from_points(cls, top_left: Point, bottom_right: Point) -> "Rect":
         """Alternative constructor using two points."""
         x1, y1 = top_left
         x2, y2 = bottom_right
@@ -246,14 +333,14 @@ class Rect(NamedTuple):
         return cls(x1, y1, w, h)
 
     @classmethod
-    def from_origin(cls, origin, size) -> "Rect":
+    def from_origin(cls, origin: Point, size: Size) -> "Rect":
         """Alternative constructor using a point and size."""
         x, y = origin
         w, h = size
         return cls(x, y, w, h)
 
     @classmethod
-    def from_center(cls, center, size) -> "Rect":
+    def from_center(cls, center: Point, size: Size) -> "Rect":
         """Alternative constructor using a center point and size."""
         w, h = size
         xc, yc = center
@@ -261,7 +348,7 @@ class Rect(NamedTuple):
         y = yc - h / 2
         return cls(x, y, w, h)
 
-    def slice(self) -> slice:
+    def slice(self) -> Tuple[slice, slice]:
         """Returns a slice for a numpy array. Not included in OpenCV.
 
         img[rect.slice()] == img[rect.y : rect.y + rect.height, rect.x : rect.x + rect.width]
@@ -275,18 +362,16 @@ class Rect(NamedTuple):
         """
         return Point(self.x + self.width / 2, self.y + self.height / 2)
 
-    def intersection(self, other) -> float:
+    def intersection(self, other: "Rect") -> float:
         """Return the area of the intersection of two rectangles. Not included in OpenCV."""
-        other = other if isinstance(other, type(self)) else type(self)(*other)
         if self.empty() or other.empty():
             return 0
         w = min(self.x + self.width, other.x + other.width) - max(self.x, other.x)
         h = min(self.y + self.height, other.y + other.height) - max(self.y, other.y)
         return w * h
 
-    def union(self, other) -> float:
+    def union(self, other: "Rect") -> float:
         """Return the area of the union of two rectangles. Not included in OpenCV."""
-        other = other if isinstance(other, type(self)) else type(self)(*other)
         return self.area() + other.area() - self.intersection(other)
 
 
@@ -299,8 +384,8 @@ class RotatedRect(NamedTuple):
         """returns the minimal rectangle containing the rotated rectangle"""
         pts = self.points()
         r = Rect.from_points(
-            Point(floor(min(pt.x for pt in pts)), floor(min(pt.y for pt in pts))),
-            Point(ceil(max(pt.x for pt in pts)), ceil(max(pt.y for pt in pts))),
+            Point(np.floor(min(pt.x for pt in pts)), np.floor(min(pt.y for pt in pts))),
+            Point(np.ceil(max(pt.x for pt in pts)), np.ceil(max(pt.y for pt in pts))),
         )
         return r
 
@@ -324,9 +409,8 @@ class RotatedRect(NamedTuple):
         return pt0, pt1, pt2, pt3
 
     @classmethod
-    def from_points(cls, point1, point2, point3):
+    def from_points(cls, point1: Point, point2: Point, point3: Point) -> "RotatedRect":
         """Any 3 end points of the RotatedRect. They must be given in order (either clockwise or anticlockwise)."""
-        point1, point2, point3 = Point(*point1), Point(*point2), Point(*point3)
         center = (point1 + point3) * 0.5
         vecs = [point1 - point2, point2 - point3]
         x = max(np.linalg.norm(pt) for pt in (point1, point2, point3))
@@ -354,15 +438,15 @@ class RotatedRect(NamedTuple):
 
 
 class TermCriteria(NamedTuple):
-    class Type(enum.IntFlag):
+    class Type(enum.IntFlag):  # type: ignore[misc]
         COUNT: int = cv.TermCriteria_COUNT
         MAX_ITER: int = cv.TermCriteria_MAX_ITER
         EPS: int = cv.TermCriteria_EPS
 
-    # To show the aliases MAX_ITER in the interpreter without this
-    Type._member_names_ = ["COUNT", "MAX_ITER", "EPS"]
+    # Without this, the MAX_ITER alias won't show up in some interpreters
+    Type._member_names_ = ["COUNT", "MAX_ITER", "EPS"]  # type: ignore[misc]
 
-    type: int = 0
+    type: int = Type.COUNT
     max_count: int = 0
     epsilon: float = 0
 
