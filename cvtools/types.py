@@ -255,7 +255,7 @@ class Rect(NamedTuple):
             "Add a Point to shift the top-left point, or a Size to expand the rectangle."
         )
 
-    def __sub__(self, other: Union[Point, Size]) -> "Rect":  # type: ignore[override]
+    def __sub__(self, other: Union[Point, Size]) -> "Rect":
         """Shift or alter the size of the rectangle.
         rect ± point (shifting a rectangle by a certain offset)
         rect ± size (expanding or shrinking a rectangle by a certain amount)
@@ -450,7 +450,7 @@ class TermCriteria(NamedTuple):
     max_count: int = 0
     epsilon: float = 0
 
-    def is_valid(self):
+    def is_valid(self) -> bool:
         is_count = (self.type & self.Type.COUNT) and self.max_count > 0
         is_eps = (self.type & self.Type.EPS) and not np.isnan(self.epsilon)
         return is_count or is_eps
