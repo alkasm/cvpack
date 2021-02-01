@@ -1,4 +1,8 @@
+from typing import Any, Callable, Iterable, Optional, Type, Union, cast
+from pathlib import Path
 import cv2 as cv
+import numpy as np
+from cvtools.types import Size
 
 
 class VideoCaptureProperty:
@@ -12,13 +16,15 @@ class VideoCaptureProperty:
         "the backend used by the cv.VideoCapture() instance."
     )
 
-    def __init__(self, prop):
+    def __init__(self, prop: str):
         self.prop = prop
 
-    def __get__(self, obj, objtype=None):
-        return obj.cap.get(self.prop)
+    def __get__(
+        self, obj: "VideoCapture", objtype: Optional[Type["VideoCapture"]] = None
+    ) -> float:
+        return cast(float, obj.cap.get(self.prop))
 
-    def __set__(self, obj, value):
+    def __set__(self, obj: "VideoCapture", value: float) -> None:
         if not obj.cap.set(self.prop, value):
             raise AttributeError(self._set_err.format(p=self.prop))
 
@@ -36,93 +42,115 @@ class VideoCapture:
     frame_count = VideoCaptureProperty(cv.CAP_PROP_FRAME_COUNT)
     format = VideoCaptureProperty(cv.CAP_PROP_FORMAT)
 
-    def __init__(self, *args, **kwargs):
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         self.cap = cv.VideoCapture(*args, **kwargs)
         if not self.cap.isOpened():
-            raise ValueError("Unable to open video source:", *args, **kwargs)
+            raise ValueError(
+                f"Unable to open video source: args: {args} kwargs: {kwargs}"
+            )
 
-    def __getattr__(self, key):
+    def __getattr__(self, key: str) -> Any:
         return getattr(self.cap, key)
 
-    def __iter__(self):
+    def __iter__(self) -> Iterable[np.ndarray]:
         """Iterate through frames in the video."""
         noread = (False, None)
         if self.cap.isOpened():
             for _, frame in iter(self.cap.read, noread):
                 yield frame
 
-    def __enter__(self):
+    def __enter__(self) -> "VideoCapture":
         """Enter the context manager."""
         return self
 
-    def __exit__(self, exctype, exc, exctrace):
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
         """Releases the video capture object on exiting the context manager."""
         self.cap.release()
 
 
 class VideoWriter:
+    filename: str
+    fourcc: int
+    fps: float
 
     _nowriter = object()
 
-    def __init__(self, filename, fourcc="mp4v", fps=30, frameSize=None, **kwargs):
+    def __init__(
+        self,
+        filename: Union[Path, str],
+        fourcc: Union[int, Iterable[str]] = "mp4v",
+        fps: float = 30,
+        frameSize: Any = None,
+        **kwargs: Any,
+    ) -> None:
         self.filename = str(filename)
         self.fourcc = (
             fourcc if isinstance(fourcc, int) else cv.VideoWriter_fourcc(*fourcc)
         )
         self.fps = fps
-        self.kwargs = kwargs
+        self._kwargs = kwargs
 
         # wait to create writer based on first frame if size is not provided
-        self.writer = (
+        self._writer = (
             self._nowriter if frameSize is None else self._makewriter(frameSize)
         )
 
-    def __enter__(self):
+    def __enter__(self) -> "VideoWriter":
         return self
 
-    def __exit__(self, *args, **kwargs):
+    def __exit__(self, *args: Any, **kwargs: Any) -> None:
         self.release()
 
-    def _makewriter(self, frame_size):
+    def _makewriter(self, frame_size: Any) -> cv.VideoWriter:
         return cv.VideoWriter(
             filename=self.filename,
             fourcc=self.fourcc,
             fps=self.fps,
             frameSize=frame_size,
-            **self.kwargs
+            **self._kwargs,
         )
 
-    def write(self, frame):
+    def write(self, frame: np.ndarray) -> bool:
         try:
-            return self.writer.write(frame)
+            return cast(bool, self._writer.write(frame))
         except AttributeError as e:
-            if self.writer is self._nowriter:
-                h, w = frame.shape[:2]
-                self.writer = self._makewriter((w, h))
-                self.write(frame)
+            if self._writer is self._nowriter:
+                size = Size.from_image(frame)
+                self._writer = self._makewriter(size)
+                return self.write(frame)
             else:
                 raise e
 
-    def release(self):
+    def release(self) -> None:
         try:
-            self.writer.release()
+            self._writer.release()
         except AttributeError as e:
-            if self.writer is not self._nowriter:
+            if self._writer is not self._nowriter:
                 raise e
 
 
 class VideoPlayer:
+    cap: VideoCapture
+    rate: float
 
     _actions = {"quit": {ord("\x1b"), ord("q")}}
 
-    def __init__(self, cap):
+    def __init__(self, cap: VideoCapture) -> None:
         self.cap = cap
         self.rate = int(1000 / self.cap.fps)
 
-    def play(self, window_name="VideoPlayer", framefunc=None, loop=False):
+    def play(
+        self,
+        window_name: str = "VideoPlayer",
+        framefunc: Optional[Callable[[np.ndarray], np.ndarray]] = None,
+        loop: bool = False,
+    ) -> None:
         """Plays through the video file with OpenCV's imshow()."""
-
-        frames = iter(self.cap) if framefunc is None else map(framefunc, iter(self.cap))
+        frames = (
+            self.cap.__iter__()
+            if framefunc is None
+            else map(framefunc, self.cap.__iter__())
+        )
         for frame in frames:
             cv.imshow(window_name, frame)
             key = cv.waitKey(self.rate) & 0xFF
