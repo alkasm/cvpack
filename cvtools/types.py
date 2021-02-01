@@ -451,6 +451,6 @@ class TermCriteria(NamedTuple):
     epsilon: float = 0
 
     def is_valid(self) -> bool:
-        is_count = (self.type & self.Type.COUNT) and self.max_count > 0
-        is_eps = (self.type & self.Type.EPS) and not np.isnan(self.epsilon)
+        is_count = bool(self.type & self.Type.COUNT) and self.max_count > 0
+        is_eps = bool(self.type & self.Type.EPS) and not np.isnan(self.epsilon)
         return is_count or is_eps
