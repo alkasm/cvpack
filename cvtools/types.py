@@ -30,16 +30,10 @@ from collections.abc import Sequence
 import itertools
 import operator
 import functools
+import enum
 from math import floor, ceil
 import numpy as np
 import cv2 as cv
-
-
-class _NamedTupleMetaBases(NamedTupleMeta):
-    def __new__(cls, typename, bases, ns):
-        cls_obj = super().__new__(cls, typename + "_nm_base", bases, ns)
-        bases = bases + (cls_obj,)
-        return type(typename, bases, {})
 
 
 def _flip_args(f):
@@ -52,70 +46,47 @@ def _flip_args(f):
     return wrapped
 
 
-def _is_sequence(o):
-    return isinstance(o, (Sequence, np.ndarray))
+def _add_arithmetic_operators(cls):
+    def is_sequence(o):
+        return isinstance(o, (Sequence, np.ndarray))
 
+    def unary_op(op):
+        def f(self):
+            return self.__class__(*map(op, self))
 
-# Seq = Union[Sequence, np.ndarray]
+        return f
 
+    def binary_op(op):
+        def f(self, other):
+            other_seq = other if is_sequence(other) else itertools.repeat(other)
+            return self.__class__(*itertools.starmap(op, zip(self, other_seq)))
 
-class _ArithmeticOperators:
-    """Generic mixin for arithmetic operations shared between Point, Size, and Scalar classes."""
-
-    def _unary_op(self, op):
-        return type(self)(*map(op, self))
-
-    def _binary_op(self, other, op):
-        other_seq = other if _is_sequence(other) else itertools.repeat(other)
-        return type(self)(*itertools.starmap(op, zip(self, other_seq)))
-
-    def __add__(self, other):
-        return self._binary_op(other, operator.add)
-
-    def __sub__(self, other):
-        return self._binary_op(other, operator.sub)
-
-    def __mul__(self, other):
-        return self._binary_op(other, operator.mul)
-
-    def __truediv__(self, other):
-        return self._binary_op(other, operator.truediv)
-
-    def __floordiv__(self, other):
-        return self._binary_op(other, operator.floordiv)
-
-    __radd__ = __add__  # commutative
-    __rmul__ = __mul__  # commutative
-
-    def __rsub__(self, other):
-        return self._binary_op(other, _flip_args(operator.sub))
-
-    def __rtruediv__(self, other):
-        return self._binary_op(other, _flip_args(operator.truediv))
-
-    def __rfloordiv__(self, other):
-        return self._binary_op(other, _flip_args(operator.floordiv))
-
-    def __pos__(self):
-        return self
-
-    def __neg__(self):
-        return self._unary_op(operator.neg)
-
-    def __abs__(self):
-        return self._unary_op(abs)
+        return f
 
     def __round__(self, ndigits=None):
-        return self._unary_op(functools.partial(round, ndigits=ndigits))
+        return unary_op(functools.partial(round, ndigits=ndigits))(self)
 
-    def __floor__(self):
-        return self._unary_op(floor)
+    setattr(cls, "__add__", binary_op(operator.add))
+    setattr(cls, "__sub__", binary_op(operator.sub))
+    setattr(cls, "__mul__", binary_op(operator.mul))
+    setattr(cls, "__truediv__", binary_op(operator.truediv))
+    setattr(cls, "__floordiv__", binary_op(operator.floordiv))
+    setattr(cls, "__rsub__", binary_op(_flip_args(operator.sub)))
+    setattr(cls, "__rtruediv__", binary_op(_flip_args(operator.truediv)))
+    setattr(cls, "__rfloordiv__", binary_op(_flip_args(operator.floordiv)))
+    setattr(cls, "__radd__", cls.__add__)  # commutative
+    setattr(cls, "__rmul__", cls.__mul__)  # commutative
+    setattr(cls, "__pos__", unary_op(operator.pos))
+    setattr(cls, "__neg__", unary_op(operator.neg))
+    setattr(cls, "__abs__", unary_op(abs))
+    setattr(cls, "__round__", __round__)
+    setattr(cls, "__floor__", unary_op(floor))
+    setattr(cls, "__ceil__", unary_op(ceil))
+    return cls
 
-    def __ceil__(self):
-        return self._unary_op(ceil)
 
-
-class Point(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
+@_add_arithmetic_operators
+class Point(NamedTuple):
     x: float
     y: float
 
@@ -134,7 +105,8 @@ class Point(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
         return rect.contains(self)
 
 
-class Point3(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
+@_add_arithmetic_operators
+class Point3(NamedTuple):
     x: float
     y: float
     z: float
@@ -149,7 +121,8 @@ class Point3(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
         return self.dot(point)
 
 
-class Size(_ArithmeticOperators, metaclass=_NamedTupleMetaBases):
+@_add_arithmetic_operators
+class Size(NamedTuple):
     width: float
     height: float
 
@@ -380,18 +353,20 @@ class RotatedRect(NamedTuple):
         return cls(center, size, angle)
 
 
-class _TermCriteriaType:
-    COUNT: int = cv.TermCriteria_COUNT
-    MAX_ITER: int = cv.TermCriteria_MAX_ITER
-    EPS: int = cv.TermCriteria_EPS
+class TermCriteria(NamedTuple):
+    class Type(enum.IntFlag):
+        COUNT: int = cv.TermCriteria_COUNT
+        MAX_ITER: int = cv.TermCriteria_MAX_ITER
+        EPS: int = cv.TermCriteria_EPS
 
+    # To show the aliases MAX_ITER in the interpreter without this
+    Type._member_names_ = ["COUNT", "MAX_ITER", "EPS"]
 
-class TermCriteria(_TermCriteriaType, metaclass=_NamedTupleMetaBases):
     type: int = 0
     max_count: int = 0
     epsilon: float = 0
 
     def is_valid(self):
-        is_count = (self.type & self.COUNT) and self.max_count > 0
-        is_eps = (self.type & self.EPS) and not np.isnan(self.epsilon)
+        is_count = (self.type & self.Type.COUNT) and self.max_count > 0
+        is_eps = (self.type & self.Type.EPS) and not np.isnan(self.epsilon)
         return is_count or is_eps

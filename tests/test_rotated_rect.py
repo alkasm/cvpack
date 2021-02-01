@@ -11,11 +11,7 @@ Integers = integers(min_value=-1_000_000, max_value=1_000_000)
 PositiveIntegers = integers(min_value=0, max_value=1_000_000)
 
 RationalRectStrategy = builds(
-    Rect,
-    Integers,
-    Integers,
-    PositiveIntegers,
-    PositiveIntegers,
+    Rect, Integers, Integers, PositiveIntegers, PositiveIntegers,
 )
 
 
