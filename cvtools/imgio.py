@@ -1,14 +1,15 @@
-from pathlib import Path
-from http.server import BaseHTTPRequestHandler, HTTPServer
-import webbrowser
 import base64
 from concurrent.futures import ThreadPoolExecutor
+from http.server import BaseHTTPRequestHandler, HTTPServer
+from pathlib import Path
+from typing import cast, Any, Optional, Union
 import urllib.request
+import webbrowser
 import cv2 as cv
 import numpy as np
 
 
-def imread(imgpath, *args, **kwargs):
+def imread(imgpath: Union[Path, str], *args: Any, **kwargs: Any) -> np.ndarray:
     """Reads an image, providing helpful errors on failed reads.
 
     Allows pathlib.Path objects as well as strings for the imgpath.
@@ -23,7 +24,7 @@ def imread(imgpath, *args, **kwargs):
     return img
 
 
-def imread_web(url, *args, **kwargs):
+def imread_web(url: str, *args: Any, **kwargs: Any) -> np.ndarray:
     """Reads an image from the web."""
     r = urllib.request.urlopen(url)
     content_type = r.headers.get_content_maintype()
@@ -33,7 +34,9 @@ def imread_web(url, *args, **kwargs):
     return cv.imdecode(buf, *args, **kwargs)
 
 
-def imwrite(imgpath, img, *args, **kwargs):
+def imwrite(
+    imgpath: Union[Path, str], img: np.ndarray, *args: Any, **kwargs: Any
+) -> bool:
     """Writes an image, providing helpful errors on failed writes.
 
     Allows pathlib.Path objects as well as strings for the imgpath.
@@ -43,19 +46,19 @@ def imwrite(imgpath, img, *args, **kwargs):
         raise ValueError("Image is empty!")
     Path(imgpath).parent.mkdir(parents=True, exist_ok=True)
     imgpath = str(imgpath)
-    return cv.imwrite(imgpath, img, *args, **kwargs)
+    return cast(bool, cv.imwrite(imgpath, img, *args, **kwargs))
 
 
-def imshow(img, wait=0, window_name=""):
+def imshow(img: np.ndarray, wait: int = 0, window_name: str = "") -> int:
     if img is None:
         raise ValueError(
             "Image is empty; ensure you are reading from the correct path."
         )
     cv.imshow(window_name, img)
-    return cv.waitKey(wait) & 0xFF
+    return cast(int, cv.waitKey(wait) & 0xFF)
 
 
-def imshow_ipython(img):
+def imshow_ipython(img: np.ndarray) -> None:
     """Shows an image in a Jupyter notebook.
 
     Raises ValueError if img is None or if img cannot be encoded.
@@ -76,7 +79,7 @@ def imshow_ipython(img):
         raise
 
 
-def imshow_components(labels, *args, **kwargs):
+def imshow_components(labels: np.ndarray, *args: Any, **kwargs: Any) -> int:
     # Map component labels to hue val
     label_hue = np.uint8(179 * labels / np.max(labels))
     blank_ch = 255 * np.ones_like(label_hue)
@@ -90,12 +93,19 @@ def imshow_components(labels, *args, **kwargs):
     return imshow(labeled_img, *args, **kwargs)
 
 
-def imshow_autoscale(img, *args, **kwargs):
+def imshow_autoscale(img: np.ndarray, *args: Any, **kwargs: Any) -> int:
     scaled = cv.normalize(img, None, 0, 255, cv.NORM_MINMAX, cv.CV_8U)
     return imshow(scaled, *args, **kwargs)
 
 
-def imshow_enlarged(img, scale=10, grid=True, color=200, wait=0, window_name=""):
+def imshow_enlarged(
+    img: np.ndarray,
+    scale: int = 10,
+    grid: bool = True,
+    color: int = 200,
+    wait: int = 0,
+    window_name: str = "",
+) -> int:
     if grid:
         r = _add_grid(img, scale, color)
     else:
@@ -103,7 +113,7 @@ def imshow_enlarged(img, scale=10, grid=True, color=200, wait=0, window_name="")
     return imshow(r, wait, window_name)
 
 
-def _add_grid(img, scale=10, color=200):
+def _add_grid(img: np.ndarray, scale: int = 10, color: int = 200) -> np.ndarray:
 
     h, w = img.shape[:2]
     r = cv.resize(img, None, fx=scale, fy=scale, interpolation=cv.INTER_NEAREST)
@@ -122,7 +132,7 @@ def _add_grid(img, scale=10, color=200):
     return r
 
 
-def _html_imshow(img):
+def _html_imshow(img: np.ndarray) -> str:
     success, encoded_img = cv.imencode(".png", img)
 
     html = """<html>
@@ -144,11 +154,11 @@ def _html_imshow(img):
 
 
 class _ImshowRequestHandler(BaseHTTPRequestHandler):
-    imshow_route = ""
-    imshow_img = None
+    imshow_route: str = ""
+    imshow_img: Optional[np.ndarray] = None
 
     # handle GET request from browser
-    def do_GET(self):
+    def do_GET(self) -> None:
         self.send_response(200)
         if self.path == f"/{self.imshow_route}":
             self.send_header("Content-type", "text/html")
@@ -157,11 +167,13 @@ class _ImshowRequestHandler(BaseHTTPRequestHandler):
         return
 
     # remove logging statements by returning nothing here
-    def log_message(self, format, *args):
+    def log_message(self, format: str, *args: Any) -> None:
         return
 
 
-def imshow_browser(img, host="localhost", port=32830, route="imshow"):
+def imshow_browser(
+    img: np.ndarray, host: str = "localhost", port: int = 32830, route: str = "imshow"
+) -> None:
     """Display an image in a browser.
 
     Spins up a single-request server to serve the image.

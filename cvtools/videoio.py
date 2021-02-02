@@ -11,7 +11,7 @@ class VideoCaptureProperty:
     Raises AttributeError when setting if that property is not supported.
     """
 
-    _set_err = (
+    _set_err: str = (
         "Unable to set the property {p}. The property might not be supported by\n"
         "the backend used by the cv.VideoCapture() instance."
     )
