@@ -3,7 +3,7 @@ name = "cvtools-alkasm"
 packages = [
     { include = "cvtools" },
 ]
-version = "0.10.1"
+version = "0.11.0"
 description = "Utilities for computer vision in Python"
 authors = ["Alexander Reynolds <ar@reynoldsalexander.com>"]
 homepage = "https://github.com/alkasm/cvtools"
@@ -28,6 +28,7 @@ pytest = "^5.4.1"
 black = "^19.10b0"
 hypothesis = "^5.8.0"
 IPython = "~=7.16"
+mypy = "^0.790"
 
 [build-system]
 requires = ["poetry>=0.12"]

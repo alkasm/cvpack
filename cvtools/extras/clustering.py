@@ -1,3 +1,5 @@
+# type: ignore
+
 import cv2
 import numpy as np
 
@@ -7,7 +9,7 @@ TWO_PI = 2 * np.pi
 
 def kmeans_periodic(columns, intervals, data, *args, **kwargs):
     """Runs kmeans with periodicity in a subset of dimensions.
-    
+
     Transforms columns with periodicity on the specified intervals into two
     columns with coordinates on the unit circle for kmeans. After running
     through kmeans, the centers are transformed back to the range specified
@@ -26,7 +28,7 @@ def kmeans_periodic(columns, intervals, data, *args, **kwargs):
     See help(cv2.kmeans) for outputs, which are passed through; except centers,
     which is modified so that it returns centers corresponding to the input
     data, instead of the transformed data.
-    
+
     Raises
     ------
     cv2.error

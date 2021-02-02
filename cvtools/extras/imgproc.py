@@ -1,3 +1,5 @@
+# type: ignore
+
 import cv2 as cv
 import numpy as np
 
@@ -64,11 +66,11 @@ def circular_mask(w, h, center=None, radius=None):
     w, h : int
         Width and height of the mask.
     center : tuple(numeric, numeric) (default: (h/2, w/2))
-        The center of the circular mask. 
+        The center of the circular mask.
     radius : tuple(numeric, numeric) (default: nearest image bound to center)
         Radius of the circle extending from the center point. Note that pixels
-        that touch the radius will be included. 
-    
+        that touch the radius will be included.
+
     Returns
     =======
     mask : np.ndarray
