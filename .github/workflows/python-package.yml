@@ -28,8 +28,8 @@ jobs:
         python -m pip install --upgrade pip poetry
         poetry install -n
     - name: Check format with black
-      run: |
-        poetry run black cvtools/ tests/ --check
+      run: poetry run black cvtools/ tests/ --check
+    - name: Static typing
+      run: poetry run mypy cvtools --strict
     - name: Test with pytest
-      run: |
-        poetry run pytest
+      run: poetry run pytest
