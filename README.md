@@ -1,4 +1,6 @@
-A collection of useful utilities for computer vision in Python. 
+# cvtools
+
+Utilities for computer vision.
 
 ## Install
     

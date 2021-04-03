@@ -2,11 +2,23 @@ import base64
 from concurrent.futures import ThreadPoolExecutor
 from http.server import BaseHTTPRequestHandler, HTTPServer
 from pathlib import Path
-from typing import cast, Any, Optional, Union
+from typing import cast, Any, Optional, Tuple, Union
 import urllib.request
 import webbrowser
 import cv2 as cv
 import numpy as np
+
+__all__ = [
+    "imread_url",
+    "imwrite",
+    "imshow",
+    "imshow_jupyter",
+    "imshow_browser",
+    "color_labels",
+    "normalize",
+    "enlarge",
+    "add_grid",
+]
 
 
 def imread(imgpath: Union[Path, str], *args: Any, **kwargs: Any) -> np.ndarray:
@@ -24,8 +36,11 @@ def imread(imgpath: Union[Path, str], *args: Any, **kwargs: Any) -> np.ndarray:
     return img
 
 
-def imread_web(url: str, *args: Any, **kwargs: Any) -> np.ndarray:
-    """Reads an image from the web."""
+def imread_url(url: str, *args: Any, **kwargs: Any) -> np.ndarray:
+    """Reads an image from a given url.
+
+    Additional args and kwargs passed onto cv.imdecode()
+    """
     r = urllib.request.urlopen(url)
     content_type = r.headers.get_content_maintype()
     if content_type != "image":
@@ -41,6 +56,8 @@ def imwrite(
 
     Allows pathlib.Path objects as well as strings for the imgpath.
     Will create the directories included in the imgpath if they don't exist.
+
+    Additional args and kwargs passed to cv.imwrite().
     """
     if img is None:
         raise ValueError("Image is empty!")
@@ -50,6 +67,7 @@ def imwrite(
 
 
 def imshow(img: np.ndarray, wait: int = 0, window_name: str = "") -> int:
+    """Combines cv.imshow() and cv.waitkey(), and checks for bad image reads."""
     if img is None:
         raise ValueError(
             "Image is empty; ensure you are reading from the correct path."
@@ -58,7 +76,7 @@ def imshow(img: np.ndarray, wait: int = 0, window_name: str = "") -> int:
     return cast(int, cv.waitKey(wait) & 0xFF)
 
 
-def imshow_ipython(img: np.ndarray) -> None:
+def imshow_jupyter(img: np.ndarray) -> None:
     """Shows an image in a Jupyter notebook.
 
     Raises ValueError if img is None or if img cannot be encoded.
@@ -79,57 +97,26 @@ def imshow_ipython(img: np.ndarray) -> None:
         raise
 
 
-def imshow_components(labels: np.ndarray, *args: Any, **kwargs: Any) -> int:
-    # Map component labels to hue val
-    label_hue = np.uint8(179 * labels / np.max(labels))
-    blank_ch = 255 * np.ones_like(label_hue)
-    labeled_img = cv.merge([label_hue, blank_ch, blank_ch])
+def imshow_browser(
+    img: np.ndarray, host: str = "localhost", port: int = 32830, route: str = "imshow"
+) -> None:
+    """Display an image in a browser.
 
-    # cvt to BGR for display
-    labeled_img = cv.cvtColor(labeled_img, cv.COLOR_HSV2BGR)
+    Spins up a single-request server to serve the image.
+    Opens the browser to make that request, then shuts down the server.
+    """
 
-    # set bg label to black
-    labeled_img[label_hue == 0] = 0
-    return imshow(labeled_img, *args, **kwargs)
+    class ImshowRequestHandler(_ImshowRequestHandler):
+        imshow_img = img
+        imshow_route = route
 
-
-def imshow_autoscale(img: np.ndarray, *args: Any, **kwargs: Any) -> int:
-    scaled = cv.normalize(img, None, 0, 255, cv.NORM_MINMAX, cv.CV_8U)
-    return imshow(scaled, *args, **kwargs)
-
-
-def imshow_enlarged(
-    img: np.ndarray,
-    scale: int = 10,
-    grid: bool = True,
-    color: int = 200,
-    wait: int = 0,
-    window_name: str = "",
-) -> int:
-    if grid:
-        r = _add_grid(img, scale, color)
-    else:
-        r = cv.resize(img, None, fx=scale, fy=scale, interpolation=cv.INTER_NEAREST)
-    return imshow(r, wait, window_name)
-
-
-def _add_grid(img: np.ndarray, scale: int = 10, color: int = 200) -> np.ndarray:
-
-    h, w = img.shape[:2]
-    r = cv.resize(img, None, fx=scale, fy=scale, interpolation=cv.INTER_NEAREST)
-
-    partial_grid = np.zeros((scale, scale), dtype=bool)
-    partial_grid[0, :] = True
-    partial_grid[:, 0] = True
-    gridlines = np.tile(partial_grid, (h, w))
-    r[gridlines] = color
-
-    pad_sizes = ((0, 1), (0, 1), (0, 0)) if len(img.shape) == 3 else ((0, 1), (0, 1))
-    r = np.pad(r, pad_sizes, "constant", color)
-    r[-1, :] = color
-    r[:, -1] = color
-
-    return r
+    server = HTTPServer((host, port), ImshowRequestHandler)
+    with ThreadPoolExecutor(max_workers=1) as executor:
+        # handle_request() blocks, so submit in an executor.
+        # the browser can open the window and get served the image,
+        # at which point the submitted task is completed.
+        executor.submit(server.handle_request)
+        webbrowser.open_new(f"http://{host}:{port}/{route}")
 
 
 def _html_imshow(img: np.ndarray) -> str:
@@ -171,23 +158,45 @@ class _ImshowRequestHandler(BaseHTTPRequestHandler):
         return
 
 
-def imshow_browser(
-    img: np.ndarray, host: str = "localhost", port: int = 32830, route: str = "imshow"
-) -> None:
-    """Display an image in a browser.
+def color_labels(labels: np.ndarray) -> np.ndarray:
+    # Map component labels to hue val
+    label_hue = np.uint8(179 * labels / np.max(labels))
+    blank_ch = 255 * np.ones_like(label_hue)
+    labeled_img = cv.merge([label_hue, blank_ch, blank_ch])
 
-    Spins up a single-request server to serve the image.
-    Opens the browser to make that request, then shuts down the server.
-    """
+    # cvt to BGR for display
+    labeled_img = cv.cvtColor(labeled_img, cv.COLOR_HSV2BGR)
 
-    class ImshowRequestHandler(_ImshowRequestHandler):
-        imshow_img = img
-        imshow_route = route
+    # set bg label to black
+    labeled_img[label_hue == 0] = 0
+    return labeled_img
 
-    server = HTTPServer((host, port), ImshowRequestHandler)
-    with ThreadPoolExecutor(max_workers=1) as executor:
-        # handle_request() blocks, so submit in an executor.
-        # the browser can open the window and get served the image,
-        # at which point the submitted task is completed.
-        executor.submit(server.handle_request)
-        webbrowser.open_new(f"http://{host}:{port}/{route}")
+
+def normalize(img: np.ndarray) -> np.ndarray:
+    return cv.normalize(img, None, 0, 255, cv.NORM_MINMAX, cv.CV_8U)
+
+
+def enlarge(img: np.ndarray, scale: int = 10) -> np.ndarray:
+    return cv.resize(img, None, fx=scale, fy=scale, interpolation=cv.INTER_NEAREST)
+
+
+def add_grid(
+    img: np.ndarray,
+    spacing: int = 10,
+    color: Union[float, Tuple[float, float, float]] = 200,
+) -> np.ndarray:
+    viz = img.copy()
+    h, w = img.shape[:2]
+
+    partial_grid = np.zeros((spacing, spacing), dtype=bool)
+    partial_grid[0, :] = True
+    partial_grid[:, 0] = True
+    gridlines = np.tile(partial_grid, (h // spacing, w // spacing))
+    viz[gridlines] = color
+
+    pad_sizes = ((0, 1), (0, 1), (0, 0)) if len(img.shape) == 3 else ((0, 1), (0, 1))
+    viz = np.pad(viz, pad_sizes)
+    viz[-1, :] = color
+    viz[:, -1] = color
+
+    return viz
