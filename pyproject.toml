@@ -3,9 +3,9 @@ name = "cvtools-alkasm"
 packages = [
     { include = "cvtools" },
 ]
-version = "0.11.0"
+version = "1.0.0"
 description = "Utilities for computer vision in Python"
-authors = ["Alexander Reynolds <ar@reynoldsalexander.com>"]
+authors = ["Alexander Reynolds <alex@theory.shop>"]
 homepage = "https://github.com/alkasm/cvtools"
 repository = "https://github.com/alkasm/cvtools"
 keywords = ["cvtools", "computer vision", "cv", "opencv"]
@@ -16,6 +16,7 @@ classifiers = [
     "License :: OSI Approved :: MIT License",
     "Operating System :: OS Independent",
 ]
+include = ["py.typed"]
 
 [tool.poetry.dependencies]
 python = "^3.6"

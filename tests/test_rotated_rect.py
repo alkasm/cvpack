@@ -1,11 +1,7 @@
 from hypothesis import given, assume
-from hypothesis.strategies import builds, integers, floats
-import numpy as np
-import cv2 as cv
+from hypothesis.strategies import builds, integers
 from cvtools import Rect, RotatedRect, Point
 import pytest
-import math
-from .test_point_size import Rationals, PositiveRationals
 
 Integers = integers(min_value=-1_000_000, max_value=1_000_000)
 PositiveIntegers = integers(min_value=0, max_value=1_000_000)
