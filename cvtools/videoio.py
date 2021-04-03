@@ -2,7 +2,7 @@ from typing import Any, Callable, Iterable, Optional, Type, Union, cast
 from pathlib import Path
 import cv2 as cv
 import numpy as np
-from cvtools.types import Size
+from cvtools.cvtypes import Size
 
 
 class VideoCaptureProperty:
