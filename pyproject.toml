@@ -3,8 +3,8 @@ name = "cvmod-alkasm"
 packages = [
     { include = "cvmod" },
 ]
-version = "1.0.2"
-description = "Utilities for computer vision in Python"
+version = "1.1.0"
+description = "Utilities for OpenCV in Python"
 authors = ["Alexander Reynolds <alex@theory.shop>"]
 homepage = "https://github.com/alkasm/cvmod"
 repository = "https://github.com/alkasm/cvmod"
