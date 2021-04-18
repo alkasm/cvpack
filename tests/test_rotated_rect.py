@@ -1,6 +1,6 @@
 from hypothesis import given, assume
 from hypothesis.strategies import builds, integers
-from cvtools import Rect, RotatedRect, Point
+from cvmod import Rect, RotatedRect, Point
 import pytest
 
 Integers = integers(min_value=-1_000_000, max_value=1_000_000)

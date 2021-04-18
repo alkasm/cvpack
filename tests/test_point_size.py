@@ -5,7 +5,7 @@ from hypothesis.strategies import builds, integers, one_of, none, fractions
 import pytest
 import numpy as np
 import cv2 as cv
-from cvtools import Point, Point3, Size
+from cvmod import Point, Point3, Size
 
 
 # Hard coded test cases

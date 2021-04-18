@@ -1,9 +1,9 @@
-# cvtools
+# cvmod
 
-Utilities for computer vision.
+OpenCV extensions for more Pythonic interactions.
 
 ## Install
     
 ```sh
-pip install cvtools-alkasm
+pip install cvmod-alkasm
 ```
