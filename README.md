@@ -20,6 +20,8 @@ p1 = cvmod.Point(50, 50)
 p2 = cvmod.Point(100, 100)
 rect = cvmod.Rect.from_points(p1, p2)
 roi = img[rect.slice()]
+roi_size = cvmod.Size.from_image(roi)
+assert roi_size == rect.size()
 ```
 
 The overloaded constructors are available as `from_` classmethods, like `from_points` shown above. They also follow the same operator overloads that OpenCV has: two points summed is a point, adding a point to a rectangle shifts it, you can `&` two rectangles to get the intersection as a new rectangle, and so on.
