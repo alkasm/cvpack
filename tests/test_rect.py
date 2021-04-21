@@ -2,7 +2,7 @@ from hypothesis import given, assume
 from hypothesis.strategies import builds, integers
 import numpy as np
 import cv2 as cv
-from cvmod import Rect
+from cvpack import Rect
 from .test_point_size import Rationals, PositiveRationals, PointStrategy, SizeStrategy
 
 

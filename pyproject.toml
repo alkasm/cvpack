@@ -1,14 +1,14 @@
 [tool.poetry]
-name = "cvmod-alkasm"
+name = "cvpack-alkasm"
 packages = [
-    { include = "cvmod" },
+    { include = "cvpack" },
 ]
 version = "1.1.0"
 description = "Utilities for OpenCV in Python"
 authors = ["Alexander Reynolds <alex@theory.shop>"]
-homepage = "https://github.com/alkasm/cvmod"
-repository = "https://github.com/alkasm/cvmod"
-keywords = ["cvmod", "computer vision", "cv", "opencv"]
+homepage = "https://github.com/alkasm/cvpack"
+repository = "https://github.com/alkasm/cvpack"
+keywords = ["cvpack", "computer vision", "cv", "opencv"]
 readme = "README.md"
 license = "MIT"
 classifiers = [

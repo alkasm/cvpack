@@ -123,7 +123,7 @@ def _html_imshow(img: np.ndarray) -> str:
     success, encoded_img = cv.imencode(".png", img)
 
     html = """<html>
-<title>cvmod/imshow</title>
+<title>cvpack/imshow</title>
 <head> 
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
